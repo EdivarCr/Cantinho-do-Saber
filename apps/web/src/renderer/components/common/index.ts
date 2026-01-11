@@ -7,5 +7,4 @@ export { LoadingSpinner } from './LoadingSpinner';
 export { ErrorMessage } from './ErrorMessage';
 export { EmptyState } from './EmptyState';
 export { ConfirmDialog } from './ConfirmDialog';
-// ErrorBoundary commented out due to TypeScript configuration issues
-// export { ErrorBoundary } from './ErrorBoundary';
+export { ErrorBoundary } from './ErrorBoundary';

@@ -23,16 +23,18 @@ import EditTeacherPage from './pages/EditTeacherPage';
 import { AttendancePage } from './pages/AttendancePage';
 import { DailyAttendancePage } from './pages/DailyAttendancePage';
 import { PrivateRoute } from './components/PrivateRoute';
+import { ErrorBoundary } from './components/common';
 
 import './global.css';
 
 export function App() {
   return (
-    <AuthProvider>
-      <ToastProvider>
-        <BrowserRouter>
-          <ToastContainer />
-          <Routes>
+    <ErrorBoundary>
+      <AuthProvider>
+        <ToastProvider>
+          <BrowserRouter>
+            <ToastContainer />
+            <Routes>
             <Route path="/" element={<Navigate to="/login" replace />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/recuperar-senha" element={<RecoveryPage />} />
@@ -178,5 +180,6 @@ export function App() {
         </BrowserRouter>
       </ToastProvider>
     </AuthProvider>
+    </ErrorBoundary>
   );
 }

@@ -9,8 +9,14 @@ import { ExpenseSchema } from '../schemas/expense.schema';
 export class ExpenseRepository implements IExpenseRepository {
   async create(expense: ExpenseEntity): Promise<boolean> {
     try {
+      console.log('[ExpenseRepository] Creating expense:', {
+        description: expense.description,
+        category: expense.category,
+        amount: expense.amount,
+      });
       const raw = ExpenseMapper.toDatabase(expense);
       await prisma.expense.create({ data: raw });
+      console.log('[ExpenseRepository] Expense created successfully');
       return true;
     } catch (error) {
       console.error('[ExpenseRepository] Error creating expense:', error);
@@ -27,6 +33,8 @@ export class ExpenseRepository implements IExpenseRepository {
   }
 
   async findByMonth(month: string): Promise<ExpenseEntity[]> {
+    console.log(`[ExpenseRepository] Finding expenses for month: ${month}`);
+    
     const [year, monthNum] = month.split('-').map(Number);
     const startDate = new Date(year, monthNum - 1, 1);
     const endDate = new Date(year, monthNum, 0, 23, 59, 59);
@@ -36,7 +44,10 @@ export class ExpenseRepository implements IExpenseRepository {
         dueDate: { gte: startDate, lte: endDate },
         deletedAt: null,
       },
+      orderBy: { dueDate: 'asc' },
     });
+    
+    console.log(`[ExpenseRepository] Found ${expenses.length} expenses`);
     return expenses.map((e) => ExpenseMapper.toDomain(e as ExpenseSchema));
   }
 

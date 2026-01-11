@@ -23,10 +23,13 @@ export class FindStudentByNameUseCase {
     studentName,
   }: FindStudentByNameUseCaseRequest): Promise<FindStudentByNameUseCaseResponse> {
     try {
+      console.log(`[FindStudentByNameUseCase] Searching for students with name: "${studentName}"`);
       const students = await this.studentRepository.findByName(studentName);
+      console.log(`[FindStudentByNameUseCase] Found ${students.length} students`);
 
       return succeed({ students: students });
     } catch (error) {
+      console.error('[FindStudentByNameUseCase] Error:', error);
       return fail(new Error('Cannot fetch students due to error: ' + error));
     }
   }

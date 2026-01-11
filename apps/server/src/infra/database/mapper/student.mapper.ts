@@ -2,6 +2,7 @@ import { UniqueEntityId } from 'apps/server/src/core/entities/unique-entity-id';
 import { StudentEntity } from 'apps/server/src/domain/enterprise/entities/student.entity';
 import { StudentSchema } from '../schemas/student.schema';
 import { SchoolGrade } from 'apps/server/src/core/types/school-enums';
+import { ClassMapper } from './class.mapper';
 
 export interface StudentPersistenceDTO {
   id: string;
@@ -26,6 +27,7 @@ export class StudentMapper {
         guardianIds: raw.guardians?.map((g) => g.guardianId) ?? [],
         enrollmentIds: raw.enrollments?.map((e) => e.id) ?? [],
         attendanceIds: raw.attendances?.map((a) => a.id) ?? [],
+        class: raw.class ? ClassMapper.toDomain(raw.class) : null,
         createdAt: raw.createdAt,
         deletedAt: raw.deletedAt,
       },

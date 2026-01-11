@@ -624,6 +624,7 @@ async function main() {
   // ============================================
   console.log('✅ Creating attendance records...');
 
+  // Distribution: 60% PRESENTE (12), 30% AUSENTE (6), 10% JUSTIFICADO (2) = 20 records
   const attendanceData = [
     // Lesson 1A_1 (yesterday) - 4 students
     { studentId: pedroSilva.id, lessonId: lesson1A_1.id, status: AttendanceStatus.PRESENTE },
@@ -647,15 +648,13 @@ async function main() {
     { studentId: sofiaAlmeida.id, lessonId: lesson4B_2.id, status: AttendanceStatus.PRESENTE },
     { studentId: rafaelSouza.id, lessonId: lesson4B_2.id, status: AttendanceStatus.AUSENTE },
     
-    // Lesson 7A_1 (4 days ago) - 3 students
+    // Lesson 7A_1 (4 days ago) - 6 students (adding 3 more to reach 20 total)
     { studentId: isabellaPereira.id, lessonId: lesson7A_1.id, status: AttendanceStatus.PRESENTE },
     { studentId: matheusRocha.id, lessonId: lesson7A_1.id, status: AttendanceStatus.PRESENTE },
-    { studentId: beatrizMartins.id, lessonId: lesson7A_1.id, status: AttendanceStatus.PRESENTE },
-    
-    // Additional records for distribution (total 20)
-    { studentId: pedroSilva.id, lessonId: lesson1A_2.id, status: AttendanceStatus.AUSENTE },
-    { studentId: gabrielLima.id, lessonId: lesson4B_1.id, status: AttendanceStatus.JUSTIFICADO },
-    { studentId: isabellaPereira.id, lessonId: lesson7A_1.id, status: AttendanceStatus.AUSENTE },
+    { studentId: beatrizMartins.id, lessonId: lesson7A_1.id, status: AttendanceStatus.AUSENTE },
+    { studentId: pedroSilva.id, lessonId: lesson7A_1.id, status: AttendanceStatus.PRESENTE },
+    { studentId: gabrielLima.id, lessonId: lesson7A_1.id, status: AttendanceStatus.JUSTIFICADO },
+    { studentId: sofiaAlmeida.id, lessonId: lesson7A_1.id, status: AttendanceStatus.AUSENTE },
   ];
 
   await prisma.attendance.createMany({

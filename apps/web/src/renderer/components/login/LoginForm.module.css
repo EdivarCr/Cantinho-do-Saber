@@ -1,0 +1,281 @@
+.label {
+  display: flex;
+  flex-direction: column;
+  font-size: var(--font-size-lg);
+  color: var(--text-color);
+  width: 100%;
+  font-family: var(--font-primary);
+  margin-bottom: var(--space-sm);
+}
+
+.passwordContainer {
+  position: relative;
+  width: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.input {
+  margin-top: var(--space-sm);
+  margin-bottom: var(--space-sm);
+  padding: var(--input-padding);
+  border-radius: var(--input-border-radius);
+  border: 1px solid transparent;
+  background: var(--input-bg);
+  outline: none;
+  color: #ffffff; /* texto branco para melhor contraste */
+  caret-color: #ffffff; /* cursor visível em fundos escuros */
+  width: 100%;
+  align-self: center;
+  font-size: var(--font-size-base);
+  transition: all 0.2s ease;
+}
+
+/* Padding extra no input de senha para o botão de visualizar */
+.passwordContainer .input {
+  padding-right: 45px;
+}
+
+/* Remove ícone de senha padrão do navegador */
+.passwordContainer .input::-ms-reveal,
+.passwordContainer .input::-ms-clear {
+  display: none;
+}
+
+.passwordContainer .input::-webkit-credentials-auto-fill-button,
+.passwordContainer .input::-webkit-contacts-auto-fill-button {
+  visibility: hidden;
+  display: none !important;
+  pointer-events: none;
+  height: 0;
+  width: 0;
+  margin: 0;
+}
+
+.togglePassword {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+  z-index: 10;
+}
+
+.togglePassword:hover {
+  opacity: 1;
+}
+
+.togglePassword svg {
+  display: block;
+  width: 20px;
+  height: 20px;
+  stroke: #ffffff !important; /* Força a cor branca explicitamente */
+  fill: none !important; /* Garante que não há preenchimento */
+  color: #ffffff !important; /* Força currentColor ser branco */
+}
+
+.togglePassword:focus {
+  outline: none;
+  opacity: 1;
+}
+
+/* placeholder color and cross-browser support */
+.input::placeholder {
+  color: rgba(255, 255, 255, 0.7);
+  opacity: 1;
+}
+.input:-ms-input-placeholder {
+  color: rgba(255, 255, 255, 0.7);
+}
+.input::-ms-input-placeholder {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.input:focus {
+  box-shadow: 0 0 0 2px var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.error {
+  color: var(--error-color);
+  font-size: var(--font-size-sm);
+  margin-top: 4px;
+}
+
+.submit {
+  margin-top: var(--space-md);
+  padding: var(--btn-padding-y) var(--btn-padding-x);
+  border-radius: var(--btn-border-radius);
+  background: var(--btn-primary);
+  color: var(--background-color);
+  font-weight: var(--font-weight-medium);
+  border: none;
+  transition: all 0.2s ease;
+  width: 50%;
+  max-width: 200px;
+  min-width: 120px;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  font-size: var(--font-size-base);
+}
+
+.submit:hover {
+  background: var(--btn-hover);
+  cursor: pointer;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.forgotRow {
+  margin-top: 20px;
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: center;
+}
+
+.forgotLink {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: var(--link-color);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.forgotLink:hover {
+  filter: brightness(0.9);
+}
+
+.submit:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.inputEmail {
+  /* Mantém legibilidade com texto branco */
+  background: var(--input-bg);
+}
+
+.inputPassword {
+  /* Mantém legibilidade com texto branco */
+  background: var(--input-bg);
+}
+
+.capsWarning {
+  margin-top: 1px;
+  font-size: 12px;
+  color: var(--danger); /* usa sua cor de erro */
+  line-height: 1.2;
+  align-self: flex-start; /* mantém alinhado ao início do grupo */
+}
+
+.toastContainer {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  z-index: 9999;
+  pointer-events: none;
+}
+
+/* Toast individual */
+.toast {
+  background: #143861;
+  color: #ffffff;
+  padding: 14px 18px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  font-size: 14px;
+  min-width: 240px;
+  max-width: 320px;
+  animation: slideIn 0.3s ease-out;
+  pointer-events: auto;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.backButton {
+  position: fixed;
+  top: 24px;
+  left: 24px;
+  background: #2fa4dd;
+  color: var(--text-primary);
+  border: 1px solid var(--card-border);
+  border-radius: 20px;
+  width: 60px;
+  height: 60px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  font-size: 30px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+}
+
+.backButton:hover {
+  background: var(--link-color);
+  color: white;
+  transform: translateX(-2px);
+  box-shadow: 0 4px 12px rgba(23, 91, 128, 0.2);
+}
+
+.backButton:active {
+  transform: translateX(-1px);
+}
+
+/* ==========================
+   OTP (código de verificação)
+   ========================== */
+.otpContainer {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(44px, 1fr));
+  gap: 10px;
+  margin: 16px 0 24px;
+  width: 100%;
+}
+
+.otpInput {
+  width: 100%;
+  aspect-ratio: 1 / 1; /* mantém quadrado e se ajusta ao container */
+  border-radius: 12px;
+  border: none;
+  background: #267fa8; /* mais escuro para melhor contraste */
+  text-align: center;
+  font-size: clamp(18px, 5vw, 28px);
+  color: #ffffff; /* dígitos em branco */
+  caret-color: #ffffff;
+  outline: none;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.otpInput:focus {
+  background: #39b0ea; /* destaque ao focar */
+  box-shadow: 0 0 0 3px rgba(62, 166, 222, 0.25);
+}

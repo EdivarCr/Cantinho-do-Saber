@@ -1,0 +1,260 @@
+.listContainer {
+  margin-top: 0;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  padding: 2rem;
+  width: 100%;
+  height: fit-content;
+}
+
+.title {
+  margin: 0 0 1.5rem 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1976d2;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid #e3f2fd;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  padding: 0.8rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+}
+
+th {
+  background: #f5f5f5;
+  color: #1976d2;
+  font-weight: 600;
+}
+
+tr:last-child td {
+  border-bottom: none;
+}
+
+.editBtn,
+.deleteBtn,
+.saveBtn,
+.cancelBtn {
+  margin-right: 0.5rem;
+  padding: 0.4rem 1rem;
+  border-radius: 6px;
+  border: none;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.editBtn {
+  background: var(--btn-primary, #1976d2);
+  color: #fff;
+}
+.editBtn:hover {
+  background: #115293;
+}
+
+.deleteBtn {
+  background: #d32f2f;
+  color: #fff;
+}
+.deleteBtn:hover {
+  background: #b71c1c;
+}
+
+.saveBtn {
+  background: #388e3c;
+  color: #fff;
+}
+.saveBtn:hover {
+  background: #256029;
+}
+
+.cancelBtn {
+  background: #eee;
+  color: #333;
+}
+.cancelBtn:hover {
+  background: #ccc;
+}
+
+.input {
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  margin-right: 0.5rem;
+}
+
+.noPermission {
+  color: #999;
+  font-size: 0.9rem;
+  font-style: italic;
+}
+
+.actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+/* Table Wrapper for horizontal scroll */
+.tableWrapper {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .listContainer {
+    padding: 1.25rem;
+    border-radius: 8px;
+  }
+
+  .title {
+    font-size: 1.25rem;
+  }
+
+  th,
+  td {
+    padding: 0.6rem 0.75rem;
+    font-size: 0.9rem;
+  }
+
+  .editBtn,
+  .deleteBtn,
+  .saveBtn,
+  .cancelBtn {
+    padding: 0.35rem 0.75rem;
+    font-size: 0.85rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .listContainer {
+    padding: 1rem;
+  }
+
+  .title {
+    font-size: 1.125rem;
+    margin-bottom: 1rem;
+  }
+
+  th,
+  td {
+    padding: 0.5rem 0.5rem;
+    font-size: 0.85rem;
+    white-space: nowrap;
+  }
+
+  .editBtn,
+  .deleteBtn,
+  .saveBtn,
+  .cancelBtn {
+    padding: 0.3rem 0.6rem;
+    font-size: 0.8rem;
+  }
+}
+
+/* Modal Styles */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modalOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.modalContent {
+  position: relative;
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  max-width: 500px;
+  width: 90%;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  animation: modalFadeIn 0.3s ease-out;
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.modalTitle {
+  font-size: 1.5rem;
+  color: #333;
+  margin: 0 0 1rem 0;
+}
+
+.modalMessage {
+  font-size: 1rem;
+  color: #666;
+  line-height: 1.6;
+  margin-bottom: 2rem;
+}
+
+.modalMessage strong {
+  color: #333;
+  font-weight: 600;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+}
+
+.modalCancelButton,
+.modalDeleteButton {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.modalCancelButton {
+  background-color: #6c757d;
+  color: white;
+}
+
+.modalCancelButton:hover {
+  background-color: #5a6268;
+}
+
+.modalDeleteButton {
+  background-color: #dc3545;
+  color: white;
+}
+
+.modalDeleteButton:hover {
+  background-color: #c82333;
+}

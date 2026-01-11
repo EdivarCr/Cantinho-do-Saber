@@ -91,7 +91,8 @@ model Teacher {
   startDate DateTime
   status    String   @default("ATIVO") // String simples ou poderia ser Enum se preferir
 
-  classes Class[]
+  classes         Class[]
+  teacherPayments TeacherPayment[]
 
   createdAt DateTime
   deletedAt DateTime?
@@ -104,8 +105,8 @@ model Class {
   // Turno da turma (Matutino, Vespertino...)
   shift Shift
 
-  // A turma atende quais séries? (Array permite turmas multisseriadas)
-  grades SchoolGrade[]
+  // Grades vêm do professor (teacher.qualifiedGrades)
+  // Removido: grades SchoolGrade[]
 
   teacherId String
   teacher   Teacher @relation(fields: [teacherId], references: [id])
@@ -212,6 +213,7 @@ model Contract {
   signatureDate DateTime
   dueDate       DateTime?
   documentUrl   String?
+  monthlyAmount Float     // Valor mensal da mensalidade
 
   enrollments Enrollment[]
 
@@ -237,17 +239,54 @@ model Enrollment {
 }
 
 model Payment {
-  id          String    @id @unique @default(ulid())
-  amount      Float
-  dueDate     DateTime // Data vencimento
-  paymentDate DateTime? // Data pagamento
-  status      String // PENDENTE, PAGO...
+  id            String    @id @unique @default(ulid())
+  amount        Float
+  dueDate       DateTime  // Data vencimento
+  paymentDate   DateTime? // Data pagamento
+  status        String    // PENDENTE, PAGO, ATRASADO
+  paymentMethod String?   // PIX, DINHEIRO, MISTO
 
   enrollmentId String
   enrollment   Enrollment @relation(fields: [enrollmentId], references: [id])
 
   createdAt DateTime
   deletedAt DateTime?
+}
+
+// Despesas operacionais
+model Expense {
+  id          String    @id @unique @default(ulid())
+  description String
+  category    String    // UTILIDADES, SUPRIMENTOS, MANUTENCAO, MARKETING, OUTROS
+  amount      Float
+  dueDate     DateTime
+  paidAt      DateTime?
+  status      String    // PENDENTE, PAGO, AGENDADO
+
+  createdAt DateTime
+  deletedAt DateTime?
+}
+
+// Folha de pagamento professores
+model TeacherPayment {
+  id                String    @id @unique @default(ulid())
+  teacherId         String
+  month             String    // YYYY-MM
+  activeStudents    Int       // Quantidade de alunos ativos
+  totalContracts    Int       // Total de contratos
+  participationRate Float     // Ex: 0.50 para 50%
+  realizedRevenue   Float     // Receita realizada (baixas)
+  amountToPay       Float     // Valor a pagar
+  status            String    // PENDENTE, PAGO
+  paidAt            DateTime?
+  paymentMethod     String?   // PIX, DINHEIRO, MISTO
+
+  teacher Teacher @relation(fields: [teacherId], references: [id])
+
+  createdAt DateTime
+  deletedAt DateTime?
+
+  @@unique([teacherId, month])
 }
 
 // ------------------------------------------------------

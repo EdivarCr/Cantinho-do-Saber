@@ -74,6 +74,7 @@ import { CreateClassController } from './infra/http/controllers/class/create-cla
 import { DeleteClassController } from './infra/http/controllers/class/delete-class.controller';
 import { FindClassByIdController } from './infra/http/controllers/class/find-class-by-id.controller';
 import { UpdateClassController } from './infra/http/controllers/class/update-class.controller';
+import { FindAllClassesController } from './infra/http/controllers/class/find-all-classes.controller';
 import { LinkGuardianToStudentController } from './infra/http/controllers/student-guardian/link-guardian-to-student.controller';
 import { FindGuardianByIdController } from './infra/http/controllers/guardian/find-guardian-by-id.controller';
 import { UpdateGuardianController } from './infra/http/controllers/guardian/update-guardian.controller';
@@ -82,6 +83,8 @@ import { CreateLessonController } from './infra/http/controllers/lesson/create-l
 import { FindLessonByIdController } from './infra/http/controllers/lesson/find-lesson-by-id.controller';
 import { UpdateLessonController } from './infra/http/controllers/lesson/update-lesson.controller';
 import { DeleteLessonController } from './infra/http/controllers/lesson/delete-lesson.controller';
+import { FindAllLessonsController } from './infra/http/controllers/lesson/find-all-lessons.controller';
+import { FindLessonsByClassController } from './infra/http/controllers/lesson/find-lessons-by-class.controller';
 import { CreateTeacherController } from './infra/http/controllers/teacher/create-teacher.controller';
 import { FindTeachersController } from './infra/http/controllers/teacher/find-teachers.controller';
 import { GetTeacherProfileController } from './infra/http/controllers/teacher/get-teacher-profile.controller';
@@ -156,6 +159,7 @@ const getStudentsCountController = container.resolve(GetStudentsCountController)
 
 const createClassController = container.resolve(CreateClassController);
 const findClassByIdController = container.resolve(FindClassByIdController);
+const findAllClassesController = container.resolve(FindAllClassesController);
 const updateClassController = container.resolve(UpdateClassController);
 const deleteClassController = container.resolve(DeleteClassController);
 
@@ -166,6 +170,8 @@ const linkGuardianToStudentController = container.resolve(LinkGuardianToStudentC
 
 const createLessonController = container.resolve(CreateLessonController);
 const findLessonByIdController = container.resolve(FindLessonByIdController);
+const findAllLessonsController = container.resolve(FindAllLessonsController);
+const findLessonsByClassController = container.resolve(FindLessonsByClassController);
 const updateLessonController = container.resolve(UpdateLessonController);
 const deleteLessonController = container.resolve(DeleteLessonController);
 
@@ -204,6 +210,7 @@ router.use('/', getStudentsCountController.router);
 
 router.use('/', createClassController.router);
 router.use('/', findClassByIdController.router);
+router.use('/', findAllClassesController.router);
 router.use('/', updateClassController.router);
 router.use('/', deleteClassController.router);
 
@@ -214,6 +221,8 @@ router.use('/', linkGuardianToStudentController.router);
 
 router.use('/', createLessonController.router);
 router.use('/', findLessonByIdController.router);
+router.use('/', findAllLessonsController.router);
+router.use('/', findLessonsByClassController.router);
 router.use('/', updateLessonController.router);
 router.use('/', deleteLessonController.router);
 

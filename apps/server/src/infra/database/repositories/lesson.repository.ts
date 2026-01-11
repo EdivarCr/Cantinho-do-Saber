@@ -24,6 +24,17 @@ export class LessonRepository implements ILessonRepository {
     return LessonMapper.toDomain(lesson as LessonSchema);
   }
 
+  async findAll(): Promise<LessonEntity[]> {
+    const lessons = await prisma.lesson.findMany({
+      where: { deletedAt: null },
+      include: {
+        class: true,
+        attendances: true,
+      },
+    });
+    return lessons.map((l) => LessonMapper.toDomain(l as LessonSchema));
+  }
+
   async update(lessonEntity: LessonEntity): Promise<boolean> {
     try {
       const data = LessonMapper.toDatabase(lessonEntity);

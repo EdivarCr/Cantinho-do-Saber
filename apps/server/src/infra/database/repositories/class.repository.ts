@@ -48,6 +48,18 @@ export class ClassRepository implements IClassRepository {
     return ClassMapper.toDomain(classData as ClassSchema);
   }
 
+  async findAll(): Promise<ClassEntity[]> {
+    const classes = await prisma.class.findMany({
+      where: { deletedAt: null },
+      include: {
+        students: true,
+        lessons: true,
+        teacher: true,
+      },
+    });
+    return classes.map((c) => ClassMapper.toDomain(c as ClassSchema));
+  }
+
   async update(classEntity: ClassEntity): Promise<boolean> {
     try {
       const raw = ClassMapper.toDatabase(classEntity);

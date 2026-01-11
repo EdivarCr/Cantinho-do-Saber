@@ -23,8 +23,8 @@ export class ProcessOverduePaymentsController {
       const result = await this.useCase.execute();
 
       if (result.isFail()) {
-        console.error('[ProcessOverduePaymentsController] Use case failed:', result.error);
-        return res.status(500).json({ message: result.error.message });
+        console.error('[ProcessOverduePaymentsController] Use case failed:', result.value);
+        return res.status(500).json({ message: (result.value as Error).message });
       }
 
       console.log('[ProcessOverduePaymentsController] Success:', result.value);

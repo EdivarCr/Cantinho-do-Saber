@@ -24,12 +24,7 @@ export class GetExpensesByMonthController {
 
       const result = await this.getExpensesByMonthUseCase.execute({ month });
 
-      if (result.isFail()) {
-        const exception = result.value;
-        console.error('[GetExpensesByMonthController] Use case failed:', exception);
-        return res.status(500).json({ message: exception.message });
-      }
-
+      // This use case never fails, it always succeeds
       const { expenses } = result.value;
       console.log('[GetExpensesByMonthController] Found expenses:', expenses.length);
 

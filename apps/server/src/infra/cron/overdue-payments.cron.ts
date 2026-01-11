@@ -16,10 +16,10 @@ export async function startOverduePaymentsCron() {
       try {
         const useCase = container.resolve(ProcessOverduePaymentsUseCase);
         const result = await useCase.execute();
-        if (result.isSuccess()) {
+        if (result.isSucceed()) {
           console.log('[CRON] Overdue payments processed successfully:', result.value);
         } else {
-          console.error('[CRON] Overdue payments processing failed:', result.error);
+          console.error('[CRON] Overdue payments processing failed:', result.value);
         }
       } catch (error) {
         console.error('[CRON] Error in overdue payments cron:', error);

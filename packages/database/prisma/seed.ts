@@ -158,7 +158,7 @@ async function main() {
         id: ulid(),
         name: classData.name,
         shift: classData.shift,
-        // Removido: grades - vêm do professor
+        // Removido: grades - vem do professor
         teacherId: classData.teacherId,
         createdAt: new Date(),
       },

@@ -11,7 +11,7 @@ type CreateClassUseCaseRequest = {
   name: string;
   teacherId: string;
   shift: Shift;
-  // Removido: grades - vêm do professor
+  // Removido: grades - vem do professor
 
   studentIds?: string[] | null;
   lessonIds?: string[] | null;

@@ -8,7 +8,7 @@ export interface ClassPersistenceDTO {
   name: string;
   teacherId: string;
   shift: Shift;
-  // Removido: grades - vêm do professor
+  // Removido: grades - vem do professor
   studentIds: string[];
   lessonIds: string[];
   createdAt: Date;
@@ -22,7 +22,7 @@ export class ClassMapper {
         name: raw.name,
         teacherId: raw.teacherId,
         shift: raw.shift as Shift,
-        // Removido: grades - vêm do professor
+        // Removido: grades - vem do professor
         studentIds: raw.students?.map((s) => s.id) ?? [],
         lessonIds: raw.lessons?.map((l) => l.id) ?? [],
         createdAt: raw.createdAt,
@@ -38,7 +38,7 @@ export class ClassMapper {
       name: entity.name,
       teacherId: entity.teacherId,
       shift: entity.shift,
-      // Removido: grades - vêm do professor
+      // Removido: grades - vem do professor
       studentIds: entity.studentIds ?? [],
       lessonIds: entity.lessonIds ?? [],
       createdAt: entity.createdAt,

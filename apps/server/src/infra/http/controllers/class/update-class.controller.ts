@@ -19,7 +19,7 @@ const updateClassBodySchema = z.object({
   name: z.string(),
   teacherId: z.string(),
   shift: z.enum(Shift),
-  // Removido: grades - vêm do professor
+  // Removido: grades - vem do professor
 });
 
 type UpdateClassBodySchema = z.infer<typeof updateClassBodySchema>;

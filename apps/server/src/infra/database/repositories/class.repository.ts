@@ -17,7 +17,7 @@ export class ClassRepository implements IClassRepository {
           name: raw.name,
           teacherId: raw.teacherId,
           shift: raw.shift,
-          // Removido: grades - vêm do professor
+          // Removido: grades - vem do professor
           createdAt: raw.createdAt,
           deletedAt: raw.deletedAt,
           students: {
@@ -71,7 +71,7 @@ export class ClassRepository implements IClassRepository {
           name: raw.name,
           teacherId: raw.teacherId,
           shift: raw.shift,
-          // Removido: grades - vêm do professor
+          // Removido: grades - vem do professor
           deletedAt: raw.deletedAt,
           students: {
             set: raw.studentIds?.map((id) => ({ id })),

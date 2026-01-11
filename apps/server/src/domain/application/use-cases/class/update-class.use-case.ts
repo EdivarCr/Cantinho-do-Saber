@@ -12,7 +12,7 @@ type UpdateClassUseCaseRequest = {
   name: string;
   teacherId: string;
   shift: Shift;
-  // Removido: grades - vêm do professor
+  // Removido: grades - vem do professor
 
   studentIds?: string[] | null;
   lessonIds?: string[] | null;
@@ -50,7 +50,7 @@ export class UpdateClassUseCase {
           name,
           teacherId,
           shift,
-          // Removido: grades - vêm do professor
+          // Removido: grades - vem do professor
           studentIds,
           lessonIds,
           createdAt: foundClass.createdAt,

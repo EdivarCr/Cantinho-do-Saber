@@ -6,7 +6,7 @@ import { injectable } from 'tsyringe';
 import { checkJwt } from '../../../auth/auth.middleware';
 import { UpdateClassUseCase } from 'apps/server/src/domain/application/use-cases/class/update-class.use-case';
 import { ResourceNotFoundError } from 'apps/server/src/core/errors/resource-not-found.error';
-import { SchoolGrade, Shift } from 'apps/server/src/core/types/school-enums';
+import { Shift } from 'apps/server/src/core/types/school-enums';
 
 const updateClassParamSchema = z.object({
   classId: z.string(),
@@ -14,12 +14,12 @@ const updateClassParamSchema = z.object({
 
 type UpdateParamSchema = z.infer<typeof updateClassParamSchema>;
 
-// Schema correto baseado na Entidade
+// Schema correto baseado na Entidade (sem grades)
 const updateClassBodySchema = z.object({
   name: z.string(),
   teacherId: z.string(),
   shift: z.enum(Shift),
-  grades: z.array(z.enum(SchoolGrade)),
+  // Removido: grades - vêm do professor
 });
 
 type UpdateClassBodySchema = z.infer<typeof updateClassBodySchema>;
@@ -43,14 +43,13 @@ export class UpdateClassController {
     const body = req.body as UpdateClassBodySchema;
     const { classId } = req.params;
 
-    const { name, teacherId, shift, grades } = body;
+    const { name, teacherId, shift } = body;
 
     const result = await this.updateClassUseCase.execute({
       classId,
       name,
       teacherId,
       shift,
-      grades,
     });
 
     if (result.isFail()) {

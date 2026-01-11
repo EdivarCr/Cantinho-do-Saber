@@ -5,14 +5,14 @@ import { ClassEntity } from '../../../enterprise/entities/class.entity';
 import { IClassRepository, CLASS_REPOSITORY_TOKEN } from '../../repositories/class.repository';
 import { UniqueEntityId } from 'apps/server/src/core/entities/unique-entity-id';
 import { inject, singleton } from 'tsyringe';
-import { SchoolGrade, Shift } from 'apps/server/src/core/types/school-enums';
+import { Shift } from 'apps/server/src/core/types/school-enums';
 
 type UpdateClassUseCaseRequest = {
   classId: string;
   name: string;
   teacherId: string;
   shift: Shift;
-  grades: SchoolGrade[];
+  // Removido: grades - vêm do professor
 
   studentIds?: string[] | null;
   lessonIds?: string[] | null;
@@ -35,7 +35,6 @@ export class UpdateClassUseCase {
     name,
     teacherId,
     shift,
-    grades,
     studentIds = null,
     lessonIds = null,
   }: UpdateClassUseCaseRequest): Promise<UpdateClassUseCaseResponse> {
@@ -51,7 +50,7 @@ export class UpdateClassUseCase {
           name,
           teacherId,
           shift,
-          grades,
+          // Removido: grades - vêm do professor
           studentIds,
           lessonIds,
           createdAt: foundClass.createdAt,
@@ -68,6 +67,7 @@ export class UpdateClassUseCase {
 
       return succeed({ classId: updatedClassEntity.id.toString() });
     } catch (error) {
+      console.error('[UpdateClassUseCase] Error:', error);
       return fail(new Error('Cannot update Class due to error: ' + error));
     }
   }

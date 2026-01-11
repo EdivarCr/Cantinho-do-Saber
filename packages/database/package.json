@@ -2,12 +2,21 @@
   "name": "@repo/database",
   "scripts": {
     "generate": "dotenv -e ../../apps/server/.env -- prisma generate",
-    "init": "dotenv -e ../../apps/server/.env -- prisma migrate dev --name init"
+    "init": "dotenv -e ../../apps/server/.env -- prisma migrate dev --name init",
+    "seed": "dotenv -e ../../apps/server/.env -- tsx prisma/seed.ts",
+    "reset": "dotenv -e ../../apps/server/.env -- prisma migrate reset"
   },
   "prisma": {
-    "schema": "./prisma/schema.prisma"
+    "schema": "./prisma/schema.prisma",
+    "seed": "tsx prisma/seed.ts"
   },
   "devDependencies": {
-    "dotenv-cli": "^10.0.0"
+    "@types/node": "^22.0.0",
+    "dotenv-cli": "^10.0.0",
+    "tsx": "^4.7.0"
+  },
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "ulid": "^3.0.1"
   }
 }

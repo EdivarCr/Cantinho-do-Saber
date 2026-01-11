@@ -40,6 +40,17 @@ export class ExpenseRepository implements IExpenseRepository {
     return expenses.map((e) => ExpenseMapper.toDomain(e as ExpenseSchema));
   }
 
+  async findByPaymentId(paymentId: string): Promise<ExpenseEntity | null> {
+    const expense = await prisma.expense.findFirst({
+      where: { 
+        paymentId,
+        deletedAt: null,
+      },
+    });
+    if (!expense) return null;
+    return ExpenseMapper.toDomain(expense as ExpenseSchema);
+  }
+
   async update(expense: ExpenseEntity): Promise<boolean> {
     try {
       const raw = ExpenseMapper.toDatabase(expense);

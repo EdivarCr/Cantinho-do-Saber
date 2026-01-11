@@ -4,6 +4,7 @@ export interface IExpenseRepository {
   create(expense: ExpenseEntity): Promise<boolean>;
   findById(id: string): Promise<ExpenseEntity | null>;
   findByMonth(month: string): Promise<ExpenseEntity[]>;
+  findByPaymentId(paymentId: string): Promise<ExpenseEntity | null>;
   update(expense: ExpenseEntity): Promise<boolean>;
   delete(id: string): Promise<boolean>;
 }

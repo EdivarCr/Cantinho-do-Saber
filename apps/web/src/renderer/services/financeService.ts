@@ -231,27 +231,23 @@ export const expenseService = {
   },
 
   async update(id: string, data: Partial<Expense>): Promise<Expense> {
-    // Note: Backend update endpoint may not exist yet, keeping for compatibility
-    console.warn('[expenseService] Update endpoint not implemented in backend');
-    throw new Error('Update expense not implemented in backend yet');
+    console.warn('[expenseService] Expense update functionality is not yet implemented in the backend API');
+    throw new Error('Expense update functionality is not yet implemented in the backend API');
   },
 
   async delete(id: string): Promise<void> {
-    // Note: Backend delete endpoint may not exist yet, keeping for compatibility
-    console.warn('[expenseService] Delete endpoint not implemented in backend');
-    throw new Error('Delete expense not implemented in backend yet');
+    console.warn('[expenseService] Expense deletion functionality is not yet implemented in the backend API');
+    throw new Error('Expense deletion functionality is not yet implemented in the backend API');
   },
 
   async markAsPaid(id: string): Promise<Expense> {
-    // Note: Backend markAsPaid endpoint may not exist yet
-    console.warn('[expenseService] markAsPaid endpoint not implemented in backend');
-    throw new Error('Mark expense as paid not implemented in backend yet');
+    console.warn('[expenseService] Mark expense as paid functionality is not yet implemented in the backend API');
+    throw new Error('Mark expense as paid functionality is not yet implemented in the backend API');
   },
 
   async revertToPending(id: string): Promise<Expense> {
-    // Note: Backend revertToPending endpoint may not exist yet
-    console.warn('[expenseService] revertToPending endpoint not implemented in backend');
-    throw new Error('Revert expense to pending not implemented in backend yet');
+    console.warn('[expenseService] Revert expense to pending functionality is not yet implemented in the backend API');
+    throw new Error('Revert expense to pending functionality is not yet implemented in the backend API');
   },
 
   async getCategories(): Promise<string[]> {

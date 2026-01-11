@@ -36,7 +36,7 @@ export class StudentRepository implements IStudentRepository {
         },
         class: {
           include: {
-            teacher: true, // IMPORTANTE: incluir professor
+            teacher: true, // IMPORTANT: include teacher
           },
         },
         enrollments: true,

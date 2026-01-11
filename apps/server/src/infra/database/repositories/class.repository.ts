@@ -41,7 +41,7 @@ export class ClassRepository implements IClassRepository {
       include: {
         students: true,
         lessons: true,
-        teacher: true, // IMPORTANTE: incluir teacher para grades
+        teacher: true, // IMPORTANT: include teacher for grades
       },
     });
     // Verifica soft delete se necessário, ou retorna mesmo deletado dependendo da regra

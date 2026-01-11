@@ -1,14 +1,14 @@
 import { ClassEntity } from 'apps/server/src/domain/enterprise/entities/class.entity';
 import { UniqueEntityId } from 'apps/server/src/core/entities/unique-entity-id';
 import { ClassSchema } from '../schemas/class.schema';
-import { SchoolGrade, Shift } from 'apps/server/src/core/types/school-enums';
+import { Shift } from 'apps/server/src/core/types/school-enums';
 
 export interface ClassPersistenceDTO {
   id: string;
   name: string;
   teacherId: string;
   shift: Shift;
-  grades: SchoolGrade[];
+  // Removido: grades - vem do professor
   studentIds: string[];
   lessonIds: string[];
   createdAt: Date;
@@ -22,7 +22,7 @@ export class ClassMapper {
         name: raw.name,
         teacherId: raw.teacherId,
         shift: raw.shift as Shift,
-        grades: (raw.grades as SchoolGrade[]) ?? [],
+        // Removido: grades - vem do professor
         studentIds: raw.students?.map((s) => s.id) ?? [],
         lessonIds: raw.lessons?.map((l) => l.id) ?? [],
         createdAt: raw.createdAt,
@@ -38,7 +38,7 @@ export class ClassMapper {
       name: entity.name,
       teacherId: entity.teacherId,
       shift: entity.shift,
-      grades: entity.grades,
+      // Removido: grades - vem do professor
       studentIds: entity.studentIds ?? [],
       lessonIds: entity.lessonIds ?? [],
       createdAt: entity.createdAt,

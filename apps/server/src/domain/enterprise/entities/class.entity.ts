@@ -1,13 +1,13 @@
 import { Entity } from 'apps/server/src/core/entities/entity';
 import { UniqueEntityId } from 'apps/server/src/core/entities/unique-entity-id';
 import { Optional } from 'apps/server/src/core/types/optional';
-import { SchoolGrade, Shift } from 'apps/server/src/core/types/school-enums';
+import { Shift } from 'apps/server/src/core/types/school-enums';
 
 export interface ClassEntityProps {
   name: string;
   teacherId: string;
   shift: Shift;
-  grades: SchoolGrade[];
+  // Removido: grades - agora vem do professor
 
   studentIds: string[] | null;
   lessonIds: string[] | null;
@@ -27,14 +27,6 @@ export class ClassEntity extends Entity<ClassEntityProps> {
 
   get shift() {
     return this.props.shift;
-  }
-
-  /**
-   * Retorna as séries que a turma atende.
-   * Substitui o antigo seriesIds.
-   */
-  get grades() {
-    return this.props.grades;
   }
 
   get studentIds() {

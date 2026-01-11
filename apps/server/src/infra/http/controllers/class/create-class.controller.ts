@@ -2,16 +2,17 @@ import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { validateBody } from '../../../http-body-validator/validator.middleware';
 import { CannotCreateError } from 'apps/server/src/core/errors/cannot-create.error';
+import { ResourceNotFoundError } from 'apps/server/src/core/errors/resource-not-found.error';
 import { injectable } from 'tsyringe';
 import { checkJwt } from '../../../auth/auth.middleware';
 import { CreateClassUseCase } from 'apps/server/src/domain/application/use-cases/class/create-class.use-case';
-import { SchoolGrade, Shift } from 'apps/server/src/core/types/school-enums';
+import { Shift } from 'apps/server/src/core/types/school-enums';
 
 const createClassBodySchema = z.object({
   name: z.string(),
   teacherId: z.string(),
   shift: z.enum(Shift),
-  grades: z.array(z.enum(SchoolGrade)),
+  // Removido: grades - vem do professor
 });
 
 type CreateClassBodySchema = z.infer<typeof createClassBodySchema>;
@@ -34,13 +35,12 @@ export class CreateClassController {
   async handle(req: Request, res: Response) {
     const body = req.body as CreateClassBodySchema;
 
-    const { name, teacherId, shift, grades } = body;
+    const { name, teacherId, shift } = body;
 
     const result = await this.createClassUseCase.execute({
       name,
       teacherId,
       shift,
-      grades,
     });
 
     if (result.isFail()) {
@@ -48,6 +48,8 @@ export class CreateClassController {
       const message = exception.message;
 
       switch (exception.constructor) {
+        case ResourceNotFoundError:
+          return res.status(404).json({ message });
         case CannotCreateError:
           return res.status(400).json({ message });
         default:

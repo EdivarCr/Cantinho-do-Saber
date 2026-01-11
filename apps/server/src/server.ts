@@ -44,6 +44,26 @@ import {
   TEACHER_REPOSITORY_TOKEN,
   ITeacherRepository,
 } from './domain/application/repositories/teacher.repository';
+import {
+  CONTRACT_REPOSITORY_TOKEN,
+  IContractRepository,
+} from './domain/application/repositories/contract.repository';
+import {
+  ENROLLMENT_REPOSITORY_TOKEN,
+  IEnrollmentRepository,
+} from './domain/application/repositories/enrollment.repository';
+import {
+  PAYMENT_REPOSITORY_TOKEN,
+  IPaymentRepository,
+} from './domain/application/repositories/payment.repository';
+import {
+  EXPENSE_REPOSITORY_TOKEN,
+  IExpenseRepository,
+} from './domain/application/repositories/expense.repository';
+import {
+  TEACHER_PAYMENT_REPOSITORY_TOKEN,
+  ITeacherPaymentRepository,
+} from './domain/application/repositories/teacher-payment.repository';
 import { GuardianRepository } from './infra/database/repositories/guardian.repository';
 import { LessonRepository } from './infra/database/repositories/lesson.repository';
 import { AttendanceRepository } from './infra/database/repositories/attendance.repository';
@@ -54,6 +74,11 @@ import { StudentRepository } from './infra/database/repositories/student.reposit
 import { ClassRepository } from './infra/database/repositories/class.repository';
 import { AddressRepository } from './infra/database/repositories/address.repository';
 import { TeacherRepository } from './infra/database/repositories/teacher.repository';
+import { ContractRepository } from './infra/database/repositories/contract.repository';
+import { EnrollmentRepository } from './infra/database/repositories/enrollment.repository';
+import { PaymentRepository } from './infra/database/repositories/payment.repository';
+import { ExpenseRepository } from './infra/database/repositories/expense.repository';
+import { TeacherPaymentRepository } from './infra/database/repositories/teacher-payment.repository';
 import { configurePassport } from './infra/auth/passport';
 import { AuthenticateUserController } from './infra/http/controllers/user/auth-user.controller';
 import { CreateUserController } from './infra/http/controllers/user/create-user.controller';
@@ -95,6 +120,10 @@ import { UpdateAttendanceController } from './infra/http/controllers/attendance/
 import { GetStudentAttendanceHistoryController } from './infra/http/controllers/attendance/get-student-attendance-history.controller';
 import { RegisterStudentAttendanceController } from './infra/http/controllers/attendance/register-student-attendance.controller';
 import { UpdateUserController } from './infra/http/controllers/user/update-user.controller';
+import { CreateEnrollmentController } from './infra/http/controllers/finance/create-enrollment.controller';
+import { RecordPaymentController } from './infra/http/controllers/finance/record-payment.controller';
+import { CreateExpenseController } from './infra/http/controllers/finance/create-expense.controller';
+import { GetExpensesByMonthController } from './infra/http/controllers/finance/get-expenses-by-month.controller';
 
 //#region MODULE CONFIGURATION
 
@@ -114,6 +143,12 @@ container.registerSingleton<IAttendanceRepository>(
 );
 container.registerSingleton<IAddressRepository>(ADDRESS_REPOSITORY_TOKEN, AddressRepository);
 container.registerSingleton<ITeacherRepository>(TEACHER_REPOSITORY_TOKEN, TeacherRepository);
+// Financial repositories
+container.registerSingleton<IContractRepository>(CONTRACT_REPOSITORY_TOKEN, ContractRepository);
+container.registerSingleton<IEnrollmentRepository>(ENROLLMENT_REPOSITORY_TOKEN, EnrollmentRepository);
+container.registerSingleton<IPaymentRepository>(PAYMENT_REPOSITORY_TOKEN, PaymentRepository);
+container.registerSingleton<IExpenseRepository>(EXPENSE_REPOSITORY_TOKEN, ExpenseRepository);
+container.registerSingleton<ITeacherPaymentRepository>(TEACHER_PAYMENT_REPOSITORY_TOKEN, TeacherPaymentRepository);
 
 //#endregion
 
@@ -188,6 +223,12 @@ const getStudentAttendanceHistoryController = container.resolve(
 const registerStudentAttendanceController = container.resolve(RegisterStudentAttendanceController);
 const updateAttendanceController = container.resolve(UpdateAttendanceController);
 
+// Finance Controllers
+const createEnrollmentController = container.resolve(CreateEnrollmentController);
+const recordPaymentController = container.resolve(RecordPaymentController);
+const createExpenseController = container.resolve(CreateExpenseController);
+const getExpensesByMonthController = container.resolve(GetExpensesByMonthController);
+
 // --- Routes Registration ---
 
 router.use('/', authUserController.router);
@@ -236,6 +277,12 @@ router.use('/', findAttendanceByIdController.router);
 router.use('/', getStudentAttendanceHistoryController.router);
 router.use('/', registerStudentAttendanceController.router);
 router.use('/', updateAttendanceController.router);
+
+// Finance routes
+router.use('/', createEnrollmentController.router);
+router.use('/', recordPaymentController.router);
+router.use('/', createExpenseController.router);
+router.use('/', getExpensesByMonthController.router);
 
 //#endregion
 

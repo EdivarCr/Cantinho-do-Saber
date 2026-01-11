@@ -74,18 +74,25 @@ export class CreateStudentUseCase {
     guardian,
   }: CreateStudentUseCaseRequest): Promise<CreateStudentUseCaseResponse> {
     try {
+      console.log('[CreateStudentUseCase] Starting student creation...');
+      console.log('[CreateStudentUseCase] Student name:', name);
+      console.log('[CreateStudentUseCase] Class ID:', classId);
+      
       const areAddressesEqual = AddressEntity.compareAddresses({
         studentAddress,
         guardianAddress,
       });
 
-      // Endereço do Aluno
+      // 1. Criar/reutilizar endereço do aluno
       const studentAddrEntity = AddressEntity.create(studentAddress);
+      console.log('[CreateStudentUseCase] Student address created:', studentAddrEntity.id.toString());
+      
       const existingStudentAddr = await this.addressRepository.findDuplicate(studentAddrEntity);
       const finalStudentAddr =
         existingStudentAddr ?? (await this.createAndReturnAddress(studentAddrEntity));
+      console.log('[CreateStudentUseCase] Final student address ID:', finalStudentAddr.id.toString());
 
-      // Endereço do Responsável
+      // 2. Criar/reutilizar endereço do responsável
       let finalGuardianAddr = finalStudentAddr;
       if (!areAddressesEqual) {
         const guardianAddrEntity = AddressEntity.create(guardianAddress);
@@ -93,25 +100,31 @@ export class CreateStudentUseCase {
         finalGuardianAddr =
           existingGuardianAddr ?? (await this.createAndReturnAddress(guardianAddrEntity));
       }
+      console.log('[CreateStudentUseCase] Final guardian address ID:', finalGuardianAddr.id.toString());
 
-      // Criação Responsável
+      // 3. Criar Guardian
       const guardianEntity = GuardianEntity.create({
         name: guardian.name,
         email: guardian.email,
         phone: guardian.phone,
       });
+      console.log('[CreateStudentUseCase] Guardian entity created:', guardianEntity.id.toString());
 
-      // Conecta endereço ao responsável
       const canCreateGuardian = await this.guardianRepository.create(guardianEntity);
-      if (!canCreateGuardian) return fail(new CannotCreateError('Guardian'));
+      if (!canCreateGuardian) {
+        console.error('[CreateStudentUseCase] Failed to create guardian');
+        return fail(new CannotCreateError('Guardian'));
+      }
+      console.log('[CreateStudentUseCase] Guardian created successfully');
 
-      // Vincula endereço ao responsável recém criado
+      // 4. Vincular endereço ao guardian
       await this.addressRepository.linkToGuardian(
         finalGuardianAddr.id.toString(),
         guardianEntity.id.toString(),
       );
+      console.log('[CreateStudentUseCase] Address linked to guardian');
 
-      // Criação do Aluno
+      // 5. Criar Student
       const studentEntity = StudentEntity.create({
         name,
         birthDate,
@@ -122,11 +135,16 @@ export class CreateStudentUseCase {
         enrollmentIds: [],
         attendanceIds: [],
       });
+      console.log('[CreateStudentUseCase] Student entity created:', studentEntity.id.toString());
 
       const canCreateStudent = await this.studentRepository.create(studentEntity);
-      if (!canCreateStudent) return fail(new CannotCreateError('Student'));
+      if (!canCreateStudent) {
+        console.error('[CreateStudentUseCase] Failed to create student');
+        return fail(new CannotCreateError('Student'));
+      }
+      console.log('[CreateStudentUseCase] Student created successfully');
 
-      // Criação do Vínculo (StudentHasGuardian) com Parentesco
+      // 6. Criar vínculo Student-Guardian
       const linkEntity = StudentGuardianEntity.create({
         studentId: studentEntity.id.toString(),
         guardianId: guardianEntity.id.toString(),
@@ -134,12 +152,16 @@ export class CreateStudentUseCase {
       });
 
       const canCreateLink = await this.studentGuardianRepository.create(linkEntity);
-      if (!canCreateLink) return fail(new CannotCreateError('Student-Guardian Link'));
+      if (!canCreateLink) {
+        console.error('[CreateStudentUseCase] Failed to create student-guardian link');
+        return fail(new CannotCreateError('Student-Guardian Link'));
+      }
+      console.log('[CreateStudentUseCase] Student-Guardian link created successfully');
 
       return succeed({ studentId: studentEntity.id.toString() });
     } catch (error) {
-      console.error('Error in CreateStudentUseCase:', error);
-      return fail(new Error('Cannot create student due to error: ' + error));
+      console.error('[CreateStudentUseCase] Error:', error);
+      return fail(new Error('Cannot create student: ' + (error as Error).message));
     }
   }
 

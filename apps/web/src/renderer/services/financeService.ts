@@ -208,14 +208,20 @@ export const expenseService = {
         dueDate: data.dueDate,
         paidAt: data.paidAt,
         status: data.status,
+        paymentId: data.paymentId, // Include paymentId for tracking overdue payment expenses
       });
       console.log('[expenseService] Expense created:', response);
       
-      // Backend returns { message, expenseId }, fetch the created expense
-      // For now, return a constructed expense object
+      // Backend returns { message, expenseId }, return constructed expense object
       return {
         id: response.expenseId,
-        ...data,
+        description: data.description,
+        category: data.category,
+        amount: data.amount,
+        dueDate: data.dueDate,
+        paidAt: data.paidAt,
+        status: data.status,
+        paymentId: data.paymentId,
         createdAt: new Date().toISOString(),
       };
     } catch (error) {

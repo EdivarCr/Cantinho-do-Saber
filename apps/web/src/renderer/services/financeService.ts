@@ -1,9 +1,15 @@
 // ============================================================================
+// IMPORTS
+// ============================================================================
+
+import { api } from './api';
+
+// ============================================================================
 // INTERFACES
 // ============================================================================
 
 export type ExpenseStatus = 'PAGO' | 'PENDENTE' | 'AGENDADO';
-export type ExpenseCategory = 'UTILIDADES' | 'SUPRIMENTOS' | 'MANUTENÇÃO' | 'MARKETING' | 'OUTROS';
+export type ExpenseCategory = 'UTILIDADES' | 'SUPRIMENTOS' | 'MANUTENÇÃO' | 'MARKETING' | 'OUTROS' | 'ADIANTAMENTO_PROFESSOR';
 
 export type PaymentMethod = 'PIX' | 'DINHEIRO' | 'MISTO';
 
@@ -15,6 +21,7 @@ export interface Expense {
   amount: number;
   status: ExpenseStatus;
   paidAt?: string;
+  paymentId?: string; // Link to payment when expense is for overdue payments
   createdAt: string;
 }
 
@@ -173,69 +180,89 @@ if (typeof window !== 'undefined') {
 
 export const expenseService = {
   async getAll(): Promise<Expense[]> {
-    return Promise.resolve(readFromStorage<Expense>(EXPENSES_KEY));
+    // Note: Backend doesn't have a getAll endpoint, use getByMonth for current month
+    const now = new Date();
+    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    return this.getByMonth(currentMonth);
   },
 
   async getByMonth(month: string): Promise<Expense[]> {
-    const expenses = readFromStorage<Expense>(EXPENSES_KEY);
-    return Promise.resolve(expenses.filter((e) => e.dueDate.startsWith(month)));
+    console.log('[expenseService] Fetching expenses for month:', month);
+    try {
+      const { data } = await api.get(`/expenses/month/${month}`);
+      console.log('[expenseService] Received expenses:', data);
+      return data.expenses || [];
+    } catch (error) {
+      console.error('[expenseService] Error fetching expenses:', error);
+      throw error;
+    }
   },
 
   async create(data: Omit<Expense, 'id' | 'createdAt'>): Promise<Expense> {
-    const expense: Expense = {
-      ...data,
-      id: generateId(),
-      createdAt: new Date().toISOString(),
-    };
-    const list = readFromStorage<Expense>(EXPENSES_KEY);
-    list.unshift(expense);
-    writeToStorage(EXPENSES_KEY, list);
-    return Promise.resolve(expense);
+    console.log('[expenseService] Creating expense:', data);
+    try {
+      const { data: response } = await api.post('/expenses', {
+        description: data.description,
+        category: data.category,
+        amount: data.amount,
+        dueDate: data.dueDate,
+        paidAt: data.paidAt,
+        status: data.status,
+      });
+      console.log('[expenseService] Expense created:', response);
+      
+      // Backend returns { message, expenseId }, fetch the created expense
+      // For now, return a constructed expense object
+      return {
+        id: response.expenseId,
+        ...data,
+        createdAt: new Date().toISOString(),
+      };
+    } catch (error) {
+      console.error('[expenseService] Error creating expense:', error);
+      throw error;
+    }
   },
 
   async update(id: string, data: Partial<Expense>): Promise<Expense> {
-    const list = readFromStorage<Expense>(EXPENSES_KEY);
-    const idx = list.findIndex((e) => e.id === id);
-    if (idx === -1) throw new Error('Despesa não encontrada');
-
-    const updated: Expense = { ...list[idx], ...data, id };
-    list[idx] = updated;
-    writeToStorage(EXPENSES_KEY, list);
-    return Promise.resolve(updated);
+    // Note: Backend update endpoint may not exist yet, keeping for compatibility
+    console.warn('[expenseService] Update endpoint not implemented in backend');
+    throw new Error('Update expense not implemented in backend yet');
   },
 
   async delete(id: string): Promise<void> {
-    const list = readFromStorage<Expense>(EXPENSES_KEY);
-    const filtered = list.filter((e) => e.id !== id);
-    writeToStorage(EXPENSES_KEY, filtered);
-    return Promise.resolve();
+    // Note: Backend delete endpoint may not exist yet, keeping for compatibility
+    console.warn('[expenseService] Delete endpoint not implemented in backend');
+    throw new Error('Delete expense not implemented in backend yet');
   },
 
   async markAsPaid(id: string): Promise<Expense> {
-    return this.update(id, {
-      status: 'PAGO',
-      paidAt: new Date().toISOString(),
-    });
+    // Note: Backend markAsPaid endpoint may not exist yet
+    console.warn('[expenseService] markAsPaid endpoint not implemented in backend');
+    throw new Error('Mark expense as paid not implemented in backend yet');
   },
 
   async revertToPending(id: string): Promise<Expense> {
-    return this.update(id, {
-      status: 'PENDENTE',
-      paidAt: undefined,
-    });
+    // Note: Backend revertToPending endpoint may not exist yet
+    console.warn('[expenseService] revertToPending endpoint not implemented in backend');
+    throw new Error('Revert expense to pending not implemented in backend yet');
   },
 
   async getCategories(): Promise<string[]> {
-    return Promise.resolve(readFromStorage<string>(CATEGORIES_KEY));
+    // Return hardcoded categories including the new one
+    return Promise.resolve([
+      'UTILIDADES',
+      'SUPRIMENTOS',
+      'MANUTENÇÃO',
+      'MARKETING',
+      'OUTROS',
+      'ADIANTAMENTO_PROFESSOR',
+    ]);
   },
 
   async addCategory(category: string): Promise<string[]> {
-    const categories = readFromStorage<string>(CATEGORIES_KEY);
-    if (!categories.includes(category.toUpperCase())) {
-      categories.push(category.toUpperCase());
-      writeToStorage(CATEGORIES_KEY, categories);
-    }
-    return Promise.resolve(categories);
+    // Categories are hardcoded, return all categories
+    return this.getCategories();
   },
 };
 

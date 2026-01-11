@@ -28,30 +28,45 @@ export class FindStudentByNameController {
   }
 
   async handle(req: Request, res: Response) {
-    const queryValidation = findStudentByNameQuerySchema.safeParse(req.query);
+    try {
+      console.log('[FindStudentByNameController] Request query:', req.query);
 
-    if (!queryValidation.success) {
-      return res.status(400).json({ message: 'Invalid search query' });
-    }
+      const queryValidation = findStudentByNameQuerySchema.safeParse(req.query);
 
-    const { studentName } = queryValidation.data;
-
-    const result = await this.findStudentByNameStudentUseCase.execute({ studentName });
-
-    if (result.isFail()) {
-      const exception = result.value;
-      const message = exception.message;
-
-      switch (exception.constructor) {
-        case ResourceNotFoundError:
-          return res.status(404).json({ message });
-        default:
-          return res.status(500).json({ message });
+      if (!queryValidation.success) {
+        console.error('[FindStudentByNameController] Validation failed:', queryValidation.error);
+        return res.status(400).json({ message: 'Invalid search query' });
       }
+
+      const { studentName } = queryValidation.data;
+      console.log('[FindStudentByNameController] Searching for name:', studentName);
+
+      const result = await this.findStudentByNameStudentUseCase.execute({ studentName });
+
+      if (result.isFail()) {
+        const exception = result.value;
+        const message = exception.message;
+
+        console.error('[FindStudentByNameController] Use case failed:', exception);
+
+        switch (exception.constructor) {
+          case ResourceNotFoundError:
+            return res.status(404).json({ message });
+          default:
+            return res.status(500).json({ message });
+        }
+      }
+
+      const { students } = result.value;
+      console.log('[FindStudentByNameController] Found students:', students.length);
+
+      return res.status(200).json(students.map(StudentPresenter.toHTTP));
+    } catch (error) {
+      console.error('[FindStudentByNameController] Error:', error);
+      return res.status(500).json({ 
+        message: 'Internal server error',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
-
-    const { students } = result.value;
-
-    return res.status(200).json(students.map(StudentPresenter.toHTTP));
   }
 }

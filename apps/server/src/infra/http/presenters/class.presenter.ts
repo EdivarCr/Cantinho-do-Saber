@@ -8,6 +8,13 @@ export class ClassPresenter {
       teacherId: classEntity.teacherId,
       shift: classEntity.shift,
       // Removido: grades - deve vir do professor quando necessário
+      teacher: classEntity.teacher ? {
+        id: classEntity.teacher.id.toString(),
+        name: classEntity.teacher.name,
+        qualifiedGrades: classEntity.teacher.qualifiedGrades,
+        email: classEntity.teacher.email,
+        phone: classEntity.teacher.phone,
+      } : null,
       studentIds: classEntity.studentIds,
       lessonIds: classEntity.lessonIds,
       createdAt: classEntity.createdAt,

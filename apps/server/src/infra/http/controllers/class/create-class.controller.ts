@@ -33,32 +33,53 @@ export class CreateClassController {
   }
 
   async handle(req: Request, res: Response) {
-    const body = req.body as CreateClassBodySchema;
+    try {
+      console.log('[CreateClassController] ========== START ==========');
+      console.log('[CreateClassController] Request body:', JSON.stringify(req.body, null, 2));
 
-    const { name, teacherId, shift } = body;
+      const body = req.body as CreateClassBodySchema;
 
-    const result = await this.createClassUseCase.execute({
-      name,
-      teacherId,
-      shift,
-    });
+      const { name, teacherId, shift } = body;
 
-    if (result.isFail()) {
-      const exception = result.value;
-      const message = exception.message;
+      console.log('[CreateClassController] Parsed data:', { name, teacherId, shift });
 
-      switch (exception.constructor) {
-        case ResourceNotFoundError:
-          return res.status(404).json({ message });
-        case CannotCreateError:
-          return res.status(400).json({ message });
-        default:
-          return res.status(500).json({ message });
+      const result = await this.createClassUseCase.execute({
+        name,
+        teacherId,
+        shift,
+      });
+
+      if (result.isFail()) {
+        const exception = result.value;
+        const message = exception.message;
+
+        console.error('[CreateClassController] ❌ Use case FAILED:', exception);
+
+        switch (exception.constructor) {
+          case ResourceNotFoundError:
+            return res.status(404).json({ message });
+          case CannotCreateError:
+            return res.status(400).json({ message });
+          default:
+            return res.status(500).json({ message });
+        }
       }
+
+      const { classId } = result.value;
+
+      console.log('[CreateClassController] ✅ SUCCESS - Class ID:', classId);
+      console.log('[CreateClassController] ========== END ==========');
+
+      return res.status(201).json({ 
+        message: 'Class created successfully',
+        classId 
+      });
+    } catch (error) {
+      console.error('[CreateClassController] ❌ EXCEPTION:', error);
+      return res.status(500).json({ 
+        message: 'Internal server error',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
-
-    const { classId } = result.value;
-
-    return res.status(201).json({ classId });
   }
 }

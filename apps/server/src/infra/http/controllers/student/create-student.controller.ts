@@ -61,32 +61,62 @@ export class CreateStudentController {
   }
 
   async handle(req: Request, res: Response) {
-    const { birthDate, classId, currentGrade, guardian, guardianAddress, name, studentAddress } =
-      req.body as CreateStudentBodySchema;
+    try {
+      console.log('[CreateStudentController] ========== START ==========');
+      console.log('[CreateStudentController] Request body:', JSON.stringify(req.body, null, 2));
 
-    const result = await this.createStudentUseCase.execute({
-      birthDate,
-      classId,
-      currentGrade,
-      guardian,
-      guardianAddress,
-      name,
-      studentAddress,
-    });
+      const { birthDate, classId, currentGrade, guardian, guardianAddress, name, studentAddress } =
+        req.body as CreateStudentBodySchema;
 
-    if (result.isFail()) {
-      const exception = result.value;
-      const message = exception.message;
+      console.log('[CreateStudentController] Parsed data:', { 
+        name, 
+        birthDate, 
+        classId, 
+        currentGrade,
+        hasGuardian: !!guardian,
+        hasStudentAddress: !!studentAddress,
+        hasGuardianAddress: !!guardianAddress
+      });
 
-      switch (exception.constructor) {
-        case CannotCreateError:
-          return res.status(400).json({ message });
-        default:
-          return res.status(500).json({ message });
+      const result = await this.createStudentUseCase.execute({
+        birthDate,
+        classId,
+        currentGrade,
+        guardian,
+        guardianAddress,
+        name,
+        studentAddress,
+      });
+
+      if (result.isFail()) {
+        const exception = result.value;
+        const message = exception.message;
+
+        console.error('[CreateStudentController] ❌ Use case FAILED:', exception);
+
+        switch (exception.constructor) {
+          case CannotCreateError:
+            return res.status(400).json({ message });
+          default:
+            return res.status(500).json({ message });
+        }
       }
-    }
 
-    const { studentId } = result.value;
-    return res.status(201).json({ studentId });
+      const { studentId } = result.value;
+
+      console.log('[CreateStudentController] ✅ SUCCESS - Student ID:', studentId);
+      console.log('[CreateStudentController] ========== END ==========');
+
+      return res.status(201).json({ 
+        message: 'Student created successfully',
+        studentId 
+      });
+    } catch (error) {
+      console.error('[CreateStudentController] ❌ EXCEPTION:', error);
+      return res.status(500).json({ 
+        message: 'Internal server error',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
   }
 }

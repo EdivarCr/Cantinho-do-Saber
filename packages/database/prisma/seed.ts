@@ -10,6 +10,11 @@ async function main() {
   // Clear existing data (in reverse order of dependencies)
   await prisma.attendance.deleteMany();
   await prisma.lesson.deleteMany();
+  await prisma.payment.deleteMany();
+  await prisma.enrollment.deleteMany();
+  await prisma.contract.deleteMany();
+  await prisma.teacherPayment.deleteMany();
+  await prisma.expense.deleteMany();
   await prisma.studentHasGuardian.deleteMany();
   await prisma.student.deleteMany();
   await prisma.guardian.deleteMany();
@@ -153,7 +158,7 @@ async function main() {
         id: ulid(),
         name: classData.name,
         shift: classData.shift,
-        grades: classData.grades,
+        // Removido: grades - vêm do professor
         teacherId: classData.teacherId,
         createdAt: new Date(),
       },
@@ -399,6 +404,162 @@ async function main() {
   }
 
   console.log(`✅ Created ${students.length} students with guardians`);
+
+  // ============================================================================
+  // 💰 CRIAR CONTRATOS E MATRÍCULAS (FINANÇAS)
+  // ============================================================================
+  console.log('💰 Creating enrollments and payments...');
+
+  const monthlyAmount = 350.00; // R$ 350,00 mensalidade
+
+  for (const student of students) {
+    // Criar contrato
+    const contract = await prisma.contract.create({
+      data: {
+        id: ulid(),
+        signatureDate: new Date('2024-02-01'),
+        dueDate: new Date('2024-12-31'),
+        monthlyAmount,
+        createdAt: new Date(),
+      },
+    });
+
+    // Criar matrícula
+    const enrollment = await prisma.enrollment.create({
+      data: {
+        id: ulid(),
+        studentId: student.id,
+        contractId: contract.id,
+        status: 'ATIVA',
+        enrollmentDate: new Date('2024-02-01'),
+        createdAt: new Date(),
+      },
+    });
+
+    // Criar 12 pagamentos (janeiro a dezembro 2024)
+    for (let month = 1; month <= 12; month++) {
+      // Marcar primeiros 8 meses como pagos, resto pendente
+      const isPaid = month <= 8;
+      
+      await prisma.payment.create({
+        data: {
+          id: ulid(),
+          enrollmentId: enrollment.id,
+          amount: monthlyAmount,
+          dueDate: new Date(2024, month - 1, 10), // Dia 10
+          paymentDate: isPaid ? new Date(2024, month - 1, 8) : null,
+          status: isPaid ? 'PAGO' : 'PENDENTE',
+          paymentMethod: isPaid ? 'PIX' : null,
+          createdAt: new Date(),
+        },
+      });
+    }
+  }
+
+  console.log('✅ Created enrollments with 12 monthly payments each');
+
+  // ============================================================================
+  // 💸 CRIAR DESPESAS OPERACIONAIS
+  // ============================================================================
+  console.log('💸 Creating operational expenses...');
+
+  await prisma.expense.createMany({
+    data: [
+      {
+        id: ulid(),
+        description: 'Conta de Energia (Enel)',
+        category: 'UTILIDADES',
+        amount: 450.00,
+        dueDate: new Date(2024, 10, 15), // Nov 2024
+        paidAt: new Date(2024, 10, 14),
+        status: 'PAGO',
+        createdAt: new Date(),
+      },
+      {
+        id: ulid(),
+        description: 'Conta de Água (Sabesp)',
+        category: 'UTILIDADES',
+        amount: 180.00,
+        dueDate: new Date(2024, 10, 20),
+        paidAt: new Date(2024, 10, 19),
+        status: 'PAGO',
+        createdAt: new Date(),
+      },
+      {
+        id: ulid(),
+        description: 'Internet Fibra (Vivo)',
+        category: 'UTILIDADES',
+        amount: 120.00,
+        dueDate: new Date(2024, 10, 5),
+        paidAt: new Date(2024, 10, 4),
+        status: 'PAGO',
+        createdAt: new Date(),
+      },
+      {
+        id: ulid(),
+        description: 'Material Escolar (Cadernos, Lápis)',
+        category: 'SUPRIMENTOS',
+        amount: 280.00,
+        dueDate: new Date(2024, 10, 10),
+        status: 'PENDENTE',
+        createdAt: new Date(),
+      },
+    ],
+  });
+
+  console.log('✅ Created 4 operational expenses');
+
+  // ============================================================================
+  // 👨‍🏫 CALCULAR E CRIAR FOLHA DE PROFESSORES
+  // ============================================================================
+  console.log('👨‍🏫 Creating teacher payments...');
+
+  // Para cada professor, calcular pagamento do mês atual
+  for (const teacher of teachers) {
+    // Buscar turmas do professor
+    const teacherClasses = await prisma.class.findMany({
+      where: { teacherId: teacher.id },
+      include: { students: true },
+    });
+
+    const activeStudents = teacherClasses.reduce(
+      (sum, c) => sum + c.students.filter(s => !s.deletedAt).length,
+      0
+    );
+
+    // Buscar pagamentos realizados dos alunos deste professor (mês atual)
+    const studentIds = teacherClasses.flatMap(c => c.students.map(s => s.id));
+    const payments = await prisma.payment.findMany({
+      where: {
+        enrollment: { studentId: { in: studentIds } },
+        status: 'PAGO',
+        dueDate: {
+          gte: new Date(2024, 10, 1),
+          lte: new Date(2024, 10, 30),
+        },
+      },
+    });
+
+    const realizedRevenue = payments.reduce((sum, p) => sum + p.amount, 0);
+    const amountToPay = realizedRevenue * 0.50; // 50% de participação
+
+    await prisma.teacherPayment.create({
+      data: {
+        id: ulid(),
+        teacherId: teacher.id,
+        month: '2024-11',
+        activeStudents,
+        totalContracts: activeStudents,
+        participationRate: 0.50,
+        realizedRevenue,
+        amountToPay,
+        status: 'PENDENTE',
+        createdAt: new Date(),
+      },
+    });
+  }
+
+  console.log('✅ Created teacher payments for current month');
 
   // ============================================================================
   // 7. CRIAR 5 LESSONS (últimos 7 dias, respeitando horário 13:00-17:30)

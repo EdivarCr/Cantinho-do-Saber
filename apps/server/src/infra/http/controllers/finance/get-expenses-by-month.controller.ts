@@ -18,13 +18,25 @@ export class GetExpensesByMonthController {
   }
 
   async handle(req: Request, res: Response) {
-    const { month } = req.params;
+    try {
+      const { month } = req.params;
+      console.log('[GetExpensesByMonthController] Fetching expenses for month:', month);
 
-    const result = await this.getExpensesByMonthUseCase.execute({ month });
+      const result = await this.getExpensesByMonthUseCase.execute({ month });
 
-    const { expenses } = result.value;
-    return res.status(200).json({
-      expenses: expenses.map(ExpensePresenter.toHTTP),
-    });
+      // This use case never fails, it always succeeds
+      const { expenses } = result.value;
+      console.log('[GetExpensesByMonthController] Found expenses:', expenses.length);
+
+      return res.status(200).json({
+        expenses: expenses.map(ExpensePresenter.toHTTP),
+      });
+    } catch (error) {
+      console.error('[GetExpensesByMonthController] Error:', error);
+      return res.status(500).json({ 
+        message: 'Internal server error',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
   }
 }

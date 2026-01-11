@@ -18,15 +18,29 @@ export class FindAllClassesController {
   }
 
   async handle(req: Request, res: Response) {
-    const result = await this.findAllClassesUseCase.execute();
+    try {
+      console.log('[FindAllClassesController] Fetching all classes...');
 
-    if (result.isFail()) {
-      const exception = result.value;
-      const message = exception.message;
-      return res.status(500).json({ message });
+      const result = await this.findAllClassesUseCase.execute();
+
+      if (result.isFail()) {
+        const exception = result.value;
+        const message = exception.message;
+        console.error('[FindAllClassesController] Use case failed:', exception);
+        return res.status(500).json({ message });
+      }
+
+      const { classes } = result.value;
+      const httpClasses = classes.map(ClassPresenter.toHTTP);
+      console.log('[FindAllClassesController] Found classes:', httpClasses.length);
+
+      return res.status(200).json({ classes: httpClasses });
+    } catch (error) {
+      console.error('[FindAllClassesController] Error:', error);
+      return res.status(500).json({ 
+        message: 'Internal server error',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
-
-    const { classes } = result.value;
-    return res.status(200).json({ classes: classes.map(ClassPresenter.toHTTP) });
   }
 }

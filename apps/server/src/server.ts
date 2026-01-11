@@ -124,6 +124,8 @@ import { CreateEnrollmentController } from './infra/http/controllers/finance/cre
 import { RecordPaymentController } from './infra/http/controllers/finance/record-payment.controller';
 import { CreateExpenseController } from './infra/http/controllers/finance/create-expense.controller';
 import { GetExpensesByMonthController } from './infra/http/controllers/finance/get-expenses-by-month.controller';
+import { ProcessOverduePaymentsController } from './infra/http/controllers/finance/process-overdue-payments.controller';
+import { startOverduePaymentsCron } from './infra/cron/overdue-payments.cron';
 
 //#region MODULE CONFIGURATION
 
@@ -228,6 +230,7 @@ const createEnrollmentController = container.resolve(CreateEnrollmentController)
 const recordPaymentController = container.resolve(RecordPaymentController);
 const createExpenseController = container.resolve(CreateExpenseController);
 const getExpensesByMonthController = container.resolve(GetExpensesByMonthController);
+const processOverduePaymentsController = container.resolve(ProcessOverduePaymentsController);
 
 // --- Routes Registration ---
 
@@ -283,9 +286,15 @@ router.use('/', createEnrollmentController.router);
 router.use('/', recordPaymentController.router);
 router.use('/', createExpenseController.router);
 router.use('/', getExpensesByMonthController.router);
+router.use('/', processOverduePaymentsController.router);
 
 //#endregion
 
 const PORT = process.env.EXPRESS_BACK_PORT ?? 4000;
 
-app.listen(PORT, async () => console.log(`🚀 Server listening on http://localhost:${PORT}`));
+app.listen(PORT, async () => {
+  console.log(`🚀 Server listening on http://localhost:${PORT}`);
+  
+  // Start cron jobs
+  startOverduePaymentsCron();
+});

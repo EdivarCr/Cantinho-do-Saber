@@ -257,11 +257,14 @@ model Payment {
 model Expense {
   id          String    @id @unique @default(ulid())
   description String
-  category    String    // UTILIDADES, SUPRIMENTOS, MANUTENCAO, MARKETING, OUTROS
+  category    String    // UTILIDADES, SUPRIMENTOS, MANUTENCAO, MARKETING, OUTROS, ADIANTAMENTO_PROFESSOR
   amount      Float
   dueDate     DateTime
   paidAt      DateTime?
   status      String    // PENDENTE, PAGO, AGENDADO
+
+  // Vincular a um Payment quando for adiantamento de professor por atraso
+  paymentId   String?   @unique
 
   createdAt DateTime
   deletedAt DateTime?

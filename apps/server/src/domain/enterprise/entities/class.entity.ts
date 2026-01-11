@@ -2,6 +2,7 @@ import { Entity } from 'apps/server/src/core/entities/entity';
 import { UniqueEntityId } from 'apps/server/src/core/entities/unique-entity-id';
 import { Optional } from 'apps/server/src/core/types/optional';
 import { Shift } from 'apps/server/src/core/types/school-enums';
+import { TeacherEntity } from './teacher.entity';
 
 export interface ClassEntityProps {
   name: string;
@@ -11,6 +12,9 @@ export interface ClassEntityProps {
 
   studentIds: string[] | null;
   lessonIds: string[] | null;
+
+  // Relação com teacher para incluir qualifiedGrades
+  teacher?: TeacherEntity | null;
 
   createdAt: Date;
   deletedAt: Date | null;
@@ -37,6 +41,10 @@ export class ClassEntity extends Entity<ClassEntityProps> {
     return this.props.lessonIds;
   }
 
+  get teacher() {
+    return this.props.teacher;
+  }
+
   get createdAt() {
     return this.props.createdAt;
   }
@@ -45,10 +53,11 @@ export class ClassEntity extends Entity<ClassEntityProps> {
     return this.props.deletedAt;
   }
 
-  static create(props: Optional<ClassEntityProps, 'createdAt' | 'deletedAt'>, id?: UniqueEntityId) {
+  static create(props: Optional<ClassEntityProps, 'createdAt' | 'deletedAt' | 'teacher'>, id?: UniqueEntityId) {
     const classEntity = new ClassEntity(
       {
         ...props,
+        teacher: props.teacher ?? null,
         createdAt: props.createdAt ?? new Date(),
         deletedAt: props.deletedAt ?? null,
       },

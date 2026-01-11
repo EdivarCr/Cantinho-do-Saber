@@ -68,6 +68,24 @@ export class PaymentRepository implements IPaymentRepository {
     return payments.map((p) => PaymentMapper.toDomain(p as PaymentSchema));
   }
 
+  async findOverdue(currentDate: Date): Promise<PaymentEntity[]> {
+    const payments = await prisma.payment.findMany({
+      where: {
+        status: 'PENDENTE',
+        dueDate: { lt: currentDate }, // Vencimento já passou
+        deletedAt: null,
+      },
+      include: { 
+        enrollment: { 
+          include: { 
+            student: true 
+          } 
+        } 
+      },
+    });
+    return payments.map((p) => PaymentMapper.toDomain(p as PaymentSchema));
+  }
+
   async update(payment: PaymentEntity): Promise<boolean> {
     try {
       const raw = PaymentMapper.toDatabase(payment);

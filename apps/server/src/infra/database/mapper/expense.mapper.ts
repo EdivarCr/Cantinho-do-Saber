@@ -10,6 +10,7 @@ export interface ExpensePersistenceDTO {
   dueDate: Date;
   paidAt: Date | null;
   status: string;
+  paymentId: string | null;
   createdAt: Date;
   deletedAt: Date | null;
 }
@@ -24,6 +25,7 @@ export class ExpenseMapper {
         dueDate: raw.dueDate,
         paidAt: raw.paidAt,
         status: raw.status,
+        paymentId: raw.paymentId ?? null,
         createdAt: raw.createdAt,
         deletedAt: raw.deletedAt,
       },
@@ -40,6 +42,7 @@ export class ExpenseMapper {
       dueDate: entity.dueDate,
       paidAt: entity.paidAt,
       status: entity.status,
+      paymentId: entity.paymentId,
       createdAt: entity.createdAt,
       deletedAt: entity.deletedAt,
     };

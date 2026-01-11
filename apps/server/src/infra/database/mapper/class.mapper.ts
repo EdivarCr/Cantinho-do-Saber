@@ -2,6 +2,7 @@ import { ClassEntity } from 'apps/server/src/domain/enterprise/entities/class.en
 import { UniqueEntityId } from 'apps/server/src/core/entities/unique-entity-id';
 import { ClassSchema } from '../schemas/class.schema';
 import { Shift } from 'apps/server/src/core/types/school-enums';
+import { TeacherMapper } from './teacher.mapper';
 
 export interface ClassPersistenceDTO {
   id: string;
@@ -25,6 +26,7 @@ export class ClassMapper {
         // Removido: grades - vem do professor
         studentIds: raw.students?.map((s) => s.id) ?? [],
         lessonIds: raw.lessons?.map((l) => l.id) ?? [],
+        teacher: raw.teacher ? TeacherMapper.toDomain(raw.teacher) : null,
         createdAt: raw.createdAt,
         deletedAt: raw.deletedAt,
       },

@@ -79,6 +79,93 @@ pnpm install
 
 ---
 
+## 🗄️ Configuração do Banco de Dados
+
+### Pré-requisitos
+- [PostgreSQL 14+](https://www.postgresql.org/download/) instalado e rodando
+- Acesso ao terminal/shell do PostgreSQL
+
+### Passo a Passo
+
+#### 1. Criar o banco de dados
+
+Abra o terminal do PostgreSQL:
+```bash
+# Linux/Mac
+sudo -u postgres psql
+
+# Windows (PowerShell como Admin)
+psql -U postgres
+```
+
+Execute:
+```sql
+CREATE DATABASE cantinho_saber;
+\c cantinho_saber
+\q
+```
+
+#### 2. Configurar variáveis de ambiente
+
+```bash
+# Copiar template do servidor
+cp apps/server/.env.example apps/server/.env
+
+# Copiar template do frontend
+cp apps/web/.env.example apps/web/.env
+
+# Editar apps/server/.env com suas credenciais do PostgreSQL
+# Especialmente a linha DATABASE_URL
+```
+
+⚠️ **Importante:** Substitua `user` e `password` na `DATABASE_URL` pelas suas credenciais do PostgreSQL.
+
+#### 3. Gerar Prisma Client
+
+```bash
+pnpm db:generate
+```
+
+#### 4. Rodar Migrations
+
+```bash
+pnpm db:run
+```
+
+#### 5. Popular com Dados de Teste
+
+```bash
+pnpm --filter=@repo/database run seed
+```
+
+### ✅ Credenciais de Teste
+
+Após rodar o seed, você pode fazer login com:
+
+**Administrador:**
+- Email: `admin@cantinho.com`
+- Senha: `Admin@123`
+
+**Professores:**
+- Email: `maria.silva@cantinho.com` | Senha: `senha123`
+- Email: `joao.santos@cantinho.com` | Senha: `senha123`
+- Email: `ana.costa@cantinho.com` | Senha: `senha123`
+
+### 🛠️ Comandos Úteis do Banco
+
+```bash
+# Abrir Prisma Studio (GUI para o banco)
+pnpm --filter=@repo/database run studio
+
+# Resetar banco (apaga tudo e roda seed novamente)
+pnpm --filter=@repo/database run reset
+
+# Gerar novo client após mudanças no schema
+pnpm db:generate
+```
+
+---
+
 ## Comandos Essenciais
 
 Todos os scripts abaixo já estão configurados no package.json e utilizam o Turborepo para rodar em todos os workspaces relevantes:

@@ -7,7 +7,7 @@ export class ClassPresenter {
       name: classEntity.name,
       teacherId: classEntity.teacherId,
       shift: classEntity.shift,
-      grades: classEntity.grades,
+      // Removido: grades - devem vir do professor quando necessário
       studentIds: classEntity.studentIds,
       lessonIds: classEntity.lessonIds,
       createdAt: classEntity.createdAt,

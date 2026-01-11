@@ -17,7 +17,7 @@ export class ClassRepository implements IClassRepository {
           name: raw.name,
           teacherId: raw.teacherId,
           shift: raw.shift,
-          grades: raw.grades,
+          // Removido: grades - vêm do professor
           createdAt: raw.createdAt,
           deletedAt: raw.deletedAt,
           students: {
@@ -30,7 +30,7 @@ export class ClassRepository implements IClassRepository {
       });
       return true;
     } catch (error) {
-      console.error(error);
+      console.error('[ClassRepository] Error creating class:', error);
       return false;
     }
   }
@@ -41,6 +41,7 @@ export class ClassRepository implements IClassRepository {
       include: {
         students: true,
         lessons: true,
+        teacher: true, // IMPORTANTE: incluir teacher para grades
       },
     });
     // Verifica soft delete se necessário, ou retorna mesmo deletado dependendo da regra
@@ -70,7 +71,7 @@ export class ClassRepository implements IClassRepository {
           name: raw.name,
           teacherId: raw.teacherId,
           shift: raw.shift,
-          grades: raw.grades,
+          // Removido: grades - vêm do professor
           deletedAt: raw.deletedAt,
           students: {
             set: raw.studentIds?.map((id) => ({ id })),
@@ -82,7 +83,7 @@ export class ClassRepository implements IClassRepository {
       });
       return true;
     } catch (error) {
-      console.error(error);
+      console.error('[ClassRepository] Error updating class:', error);
       return false;
     }
   }

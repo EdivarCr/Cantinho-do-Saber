@@ -2,6 +2,7 @@ import { Entity } from 'apps/server/src/core/entities/entity';
 import { UniqueEntityId } from 'apps/server/src/core/entities/unique-entity-id';
 import { Optional } from 'apps/server/src/core/types/optional';
 import { SchoolGrade } from 'apps/server/src/core/types/school-enums';
+import { ClassEntity } from './class.entity';
 
 export interface StudentProps {
   name: string;
@@ -12,6 +13,9 @@ export interface StudentProps {
   guardianIds: string[];
   enrollmentIds: string[];
   attendanceIds: string[];
+
+  // Optional class data for populated queries
+  class?: ClassEntity | null;
 
   createdAt: Date;
   deletedAt: Date | null;
@@ -50,6 +54,10 @@ export class StudentEntity extends Entity<StudentProps> {
     return this.props.attendanceIds;
   }
 
+  get class() {
+    return this.props.class;
+  }
+
   get createdAt() {
     return this.props.createdAt;
   }
@@ -61,7 +69,7 @@ export class StudentEntity extends Entity<StudentProps> {
   static create(
     props: Optional<
       StudentProps,
-      'createdAt' | 'deletedAt' | 'addressIds' | 'guardianIds' | 'enrollmentIds' | 'attendanceIds'
+      'createdAt' | 'deletedAt' | 'addressIds' | 'guardianIds' | 'enrollmentIds' | 'attendanceIds' | 'class'
     >,
     id?: UniqueEntityId,
   ): StudentEntity {
@@ -72,6 +80,7 @@ export class StudentEntity extends Entity<StudentProps> {
         guardianIds: props.guardianIds ?? [],
         enrollmentIds: props.enrollmentIds ?? [],
         attendanceIds: props.attendanceIds ?? [],
+        class: props.class ?? null,
         createdAt: props.createdAt ?? new Date(),
         deletedAt: props.deletedAt ?? null,
       },

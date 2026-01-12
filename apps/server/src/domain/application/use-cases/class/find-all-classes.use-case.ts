@@ -14,9 +14,12 @@ export class FindAllClassesUseCase {
 
   async execute(): Promise<FindAllClassesUseCaseResponse> {
     try {
+      console.log('[FindAllClassesUseCase] Fetching all classes from repository...');
       const classes = await this.classRepository.findAll();
+      console.log(`[FindAllClassesUseCase] Retrieved ${classes.length} classes`);
       return succeed({ classes });
     } catch (error) {
+      console.error('[FindAllClassesUseCase] Error:', error);
       return fail(new Error('Classes could not be retrieved due to error: ' + error));
     }
   }

@@ -17,6 +17,8 @@ export class ClassPresenter {
       } : null,
       studentIds: classEntity.studentIds,
       lessonIds: classEntity.lessonIds,
+      studentsCount: classEntity.studentIds?.length || 0,
+      lessonsCount: classEntity.lessonIds?.length || 0,
       createdAt: classEntity.createdAt,
     };
   }

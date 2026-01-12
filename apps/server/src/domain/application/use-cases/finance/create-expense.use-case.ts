@@ -12,7 +12,9 @@ type CreateExpenseRequest = {
   category: string;
   amount: number;
   dueDate: Date;
+  paidAt?: Date;
   status: string;
+  paymentId?: string;
 };
 
 type CreateExpenseResponse = Either<CannotCreateError, { expenseId: string }>;
@@ -32,7 +34,9 @@ export class CreateExpenseUseCase {
         category: request.category,
         amount: request.amount,
         dueDate: request.dueDate,
+        paidAt: request.paidAt ?? null,
         status: request.status,
+        paymentId: request.paymentId ?? null,
       });
 
       const created = await this.expenseRepo.create(expense);

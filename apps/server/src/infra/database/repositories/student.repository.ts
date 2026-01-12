@@ -16,6 +16,8 @@ export class StudentRepository implements IStudentRepository {
   }
 
   async findByName(name: string): Promise<StudentEntity[]> {
+    console.log(`[StudentRepository] Searching students with name: "${name}"`);
+    
     const students = await prisma.student.findMany({
       where: {
         name: {
@@ -27,10 +29,22 @@ export class StudentRepository implements IStudentRepository {
       // Include necessário para popular os IDs no Mapper
       include: {
         addresses: true,
-        guardians: true,
+        guardians: {
+          include: {
+            guardian: true,
+          },
+        },
+        class: {
+          include: {
+            teacher: true, // IMPORTANT: include teacher
+          },
+        },
+        enrollments: true,
+        attendances: true,
       },
     });
 
+    console.log(`[StudentRepository] Found ${students.length} students`);
     return students.map((s) => StudentMapper.toDomain(s as StudentSchema));
   }
 
@@ -68,17 +82,33 @@ export class StudentRepository implements IStudentRepository {
   }
 
   async findById(id: string): Promise<StudentEntity | null> {
+    console.log(`[StudentRepository] Finding student by id: ${id}`);
+    
     const student = await prisma.student.findUnique({
       where: { id },
       include: {
         addresses: true,
-        guardians: true, // Traz a tabela associativa
+        guardians: {
+          include: {
+            guardian: true,
+          },
+        },
         enrollments: true,
         attendances: true,
+        class: {
+          include: {
+            teacher: true,
+          },
+        },
       },
     });
 
-    if (!student) return null;
+    if (!student) {
+      console.log(`[StudentRepository] Student not found: ${id}`);
+      return null;
+    }
+    
+    console.log(`[StudentRepository] Found student: ${student.name}`);
     return StudentMapper.toDomain(student as StudentSchema);
   }
 
@@ -125,18 +155,54 @@ export class StudentRepository implements IStudentRepository {
   }
 
   async findAllByClass(classId: string): Promise<StudentEntity[]> {
+    console.log(`[StudentRepository] Finding students by class: ${classId}`);
+    
     const students = await prisma.student.findMany({
       where: { classId, deletedAt: null },
-      include: { addresses: true, guardians: true },
+      include: { 
+        addresses: true, 
+        guardians: {
+          include: {
+            guardian: true,
+          },
+        },
+        class: {
+          include: {
+            teacher: true,
+          },
+        },
+        enrollments: true,
+        attendances: true,
+      },
     });
+    
+    console.log(`[StudentRepository] Found ${students.length} students in class`);
     return students.map((s) => StudentMapper.toDomain(s as StudentSchema));
   }
 
   async findAllByGrade(grade: SchoolGrade): Promise<StudentEntity[]> {
+    console.log(`[StudentRepository] Finding students by grade: ${grade}`);
+    
     const students = await prisma.student.findMany({
       where: { currentGrade: grade, deletedAt: null },
-      include: { addresses: true, guardians: true },
+      include: { 
+        addresses: true, 
+        guardians: {
+          include: {
+            guardian: true,
+          },
+        },
+        class: {
+          include: {
+            teacher: true,
+          },
+        },
+        enrollments: true,
+        attendances: true,
+      },
     });
+    
+    console.log(`[StudentRepository] Found ${students.length} students in grade`);
     return students.map((s) => StudentMapper.toDomain(s as StudentSchema));
   }
 }

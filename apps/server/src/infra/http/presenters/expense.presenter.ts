@@ -10,6 +10,7 @@ export class ExpensePresenter {
       dueDate: expenseEntity.dueDate,
       paidAt: expenseEntity.paidAt,
       status: expenseEntity.status,
+      paymentId: expenseEntity.paymentId,
       createdAt: expenseEntity.createdAt,
     };
   }

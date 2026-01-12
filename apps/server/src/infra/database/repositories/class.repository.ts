@@ -41,7 +41,7 @@ export class ClassRepository implements IClassRepository {
       include: {
         students: true,
         lessons: true,
-        teacher: true, // IMPORTANTE: incluir teacher para grades
+        teacher: true, // IMPORTANT: include teacher for grades
       },
     });
     // Verifica soft delete se necessário, ou retorna mesmo deletado dependendo da regra
@@ -50,6 +50,8 @@ export class ClassRepository implements IClassRepository {
   }
 
   async findAll(): Promise<ClassEntity[]> {
+    console.log('[ClassRepository] findAll() called');
+    
     const classes = await prisma.class.findMany({
       where: { deletedAt: null },
       include: {
@@ -58,6 +60,8 @@ export class ClassRepository implements IClassRepository {
         teacher: true,
       },
     });
+    
+    console.log(`[ClassRepository] Found ${classes.length} classes`);
     return classes.map((c) => ClassMapper.toDomain(c as ClassSchema));
   }
 

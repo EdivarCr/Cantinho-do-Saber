@@ -1,8 +1,9 @@
 // ============================================================================
 // SERVIÇO DE DADOS FINANCEIROS DO DASHBOARD
-// Integra pricing, alunos e professores para exibição no dashboard
+// Integra dados de pagamentos via API
 // ============================================================================
 
+import { api } from './api';
 import { studentService, Student } from './studentService';
 import { teacherService, Teacher } from './teacherService';
 import { classService, Class } from './classService';
@@ -18,17 +19,19 @@ import {
 // ============================================================================
 
 export interface TeacherPaymentSummary {
+  teacherPaymentId: string;
   teacherId: string;
   teacherName: string;
   totalStudents: number;
-  totalRevenue: number; // Total das mensalidades dos alunos
-  amountToPay: number; // 50% do total
+  totalRevenue: number;
+  amountToPay: number;
   status: 'PENDENTE' | 'PAGO';
   paidAt?: string;
   paymentMethod?: PaymentMethod;
 }
 
 export interface MonthlyFeeSummary {
+  paymentId: string;
   studentId: string;
   studentName: string;
   className: string;
@@ -38,117 +41,59 @@ export interface MonthlyFeeSummary {
   dueDate: string;
   paidAt?: string;
   paymentMethod?: PaymentMethod;
-  overdueMonths?: string[]; // Lista de meses atrasados (formato YYYY-MM)
+  overdueMonths?: string[];
 }
 
 export interface DashboardFinanceSummary {
-  // Mensalidades
-  totalMonthlyFees: number; // Total de mensalidades a receber
-  paidMonthlyFees: number; // Mensalidades pagas
-  pendingMonthlyFees: number; // Mensalidades pendentes
-  overdueMonthlyFees: number; // Mensalidades atrasadas
-
-  // Professores
-  totalTeacherPayments: number; // Total a pagar para professores
-  paidTeacherPayments: number; // Pagamentos de professores concluídos
-  pendingTeacherPayments: number; // Pagamentos de professores pendentes
-
-  // Lucro
-  netProfit: number; // Lucro líquido (mensalidades pagas - professores pagos)
-
-  // Listas
+  totalMonthlyFees: number;
+  paidMonthlyFees: number;
+  pendingMonthlyFees: number;
+  overdueMonthlyFees: number;
+  totalTeacherPayments: number;
+  paidTeacherPayments: number;
+  pendingTeacherPayments: number;
+  netProfit: number;
   teacherPayments: TeacherPaymentSummary[];
   studentPayments: MonthlyFeeSummary[];
 }
 
-// ============================================================================
-// STORAGE PARA PAGAMENTOS
-// ============================================================================
-
-const TEACHER_PAYMENTS_STATUS_KEY = 'dashboard_teacher_payments_status';
-const STUDENT_PAYMENTS_STATUS_KEY = 'dashboard_student_payments_status';
-
 export type PaymentMethod = 'PIX' | 'DINHEIRO' | 'MISTO';
 
-interface PaymentStatus {
+// ============================================================================
+// INTERFACES FROM BACKEND
+// ============================================================================
+
+interface PaymentFromBackend {
   id: string;
-  status: 'PENDENTE' | 'PAGO' | 'ATRASADO';
-  paidAt?: string;
-  paymentMethod?: PaymentMethod;
+  studentId: string;
+  studentName: string;
+  className: string;
+  amount: number;
+  dueDate: string;
+  paymentDate: string | null;
+  status: string;
+  paymentMethod: string | null;
+  enrollmentId: string;
 }
 
-function loadPaymentStatus(key: string): Map<string, PaymentStatus> {
-  try {
-    const stored = localStorage.getItem(key);
-    if (stored) {
-      const parsed = JSON.parse(stored);
-      return new Map(Object.entries(parsed));
-    }
-  } catch {
-    // ignore
-  }
-  return new Map();
-}
-
-function savePaymentStatus(key: string, status: Map<string, PaymentStatus>): void {
-  const obj = Object.fromEntries(status);
-  localStorage.setItem(key, JSON.stringify(obj));
+interface TeacherPaymentFromBackend {
+  id: string;
+  teacherId: string;
+  teacherName: string;
+  month: string;
+  activeStudents: number;
+  totalContracts: number;
+  participationRate: number;
+  realizedRevenue: number;
+  amountToPay: number;
+  status: string;
+  paidAt: string | null;
+  paymentMethod: string | null;
 }
 
 // ============================================================================
 // SERVIÇO
 // ============================================================================
-
-/**
- * Retorna a lista de meses atrasados para um aluno
- * A primeira mensalidade só é contada a partir do mês do primeiro cadastro
- */
-function getOverdueMonthsForStudent(
-  studentId: string,
-  targetMonth: string,
-  enrollmentDate?: string,
-): string[] {
-  // Se não tem data de matrícula, não verifica meses anteriores
-  if (!enrollmentDate) {
-    return [];
-  }
-
-  const overdueMonths: string[] = [];
-  const [targetYear, targetMonthNum] = targetMonth.split('-').map(Number);
-
-  // Determina o mês de início (mês da matrícula)
-  const enrollmentDateObj = new Date(enrollmentDate);
-  const enrollmentYear = enrollmentDateObj.getFullYear();
-  const enrollmentMonthNum = enrollmentDateObj.getMonth() + 1;
-  const enrollmentMonth = `${enrollmentYear}-${String(enrollmentMonthNum).padStart(2, '0')}`;
-
-  // Se o mês alvo é anterior ou igual ao mês de matrícula, não há meses atrasados
-  if (targetMonth <= enrollmentMonth) {
-    return [];
-  }
-
-  // Percorre os meses desde a matrícula até o mês anterior ao alvo
-  let currentDate = new Date(enrollmentYear, enrollmentMonthNum - 1, 1);
-  const targetDate = new Date(targetYear, targetMonthNum - 1, 1);
-
-  while (currentDate < targetDate) {
-    const monthStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
-
-    // Carrega status de pagamento para este mês
-    const status = loadPaymentStatus(`${STUDENT_PAYMENTS_STATUS_KEY}_${monthStr}`);
-    const paymentInfo = status.get(studentId);
-
-    // Se não tem pagamento ou status não é PAGO, está atrasado
-    if (!paymentInfo || paymentInfo.status !== 'PAGO') {
-      overdueMonths.push(monthStr);
-    }
-
-    // Avança para o próximo mês
-    currentDate.setMonth(currentDate.getMonth() + 1);
-  }
-
-  return overdueMonths; // Já está ordenado do mais antigo para o mais recente
-}
 
 export const dashboardFinanceService = {
   /**
@@ -156,67 +101,161 @@ export const dashboardFinanceService = {
    * @param month Mês no formato YYYY-MM (opcional, padrão: mês atual)
    */
   async getFinanceSummary(month?: string): Promise<DashboardFinanceSummary> {
-    // Define o mês a ser consultado
     const targetMonth = month || this.getCurrentMonth();
 
-    // Carrega dados
+    // Carrega dados de alunos, professores e turmas para fallback
     const [students, teachers, classes] = await Promise.all([
       studentService.getAll(),
       teacherService.getAll(),
       classService.getAll(),
     ]);
 
-    // Filtra apenas alunos ativos
+    // Tenta buscar pagamentos do backend
+    let paymentsFromApi: PaymentFromBackend[] = [];
+    let teacherPaymentsFromApi: TeacherPaymentFromBackend[] = [];
+
+    try {
+      const { data: paymentsData } = await api.get<{ payments: PaymentFromBackend[] }>(
+        `/payments/month/${targetMonth}`,
+      );
+      paymentsFromApi = paymentsData.payments || [];
+    } catch (error) {
+      console.log('[dashboardFinanceService] Payments API not available, using calculated data');
+    }
+
+    try {
+      const { data: teacherPaymentsData } = await api.get<{
+        teacherPayments: TeacherPaymentFromBackend[];
+      }>(`/teacher-payments/month/${targetMonth}`);
+      teacherPaymentsFromApi = teacherPaymentsData.teacherPayments || [];
+    } catch (error) {
+      console.log(
+        '[dashboardFinanceService] Teacher payments API not available, using calculated data',
+      );
+    }
+
+    // Se temos dados da API, use-os
+    if (paymentsFromApi.length > 0) {
+      return this.buildSummaryFromApi(
+        paymentsFromApi,
+        teacherPaymentsFromApi,
+        teachers,
+        targetMonth,
+      );
+    }
+
+    // Fallback: calcula com base nos alunos cadastrados
+    return this.buildSummaryFromStudents(students, teachers, classes, targetMonth);
+  },
+
+  /**
+   * Constrói resumo a partir dos dados da API
+   */
+  buildSummaryFromApi(
+    payments: PaymentFromBackend[],
+    teacherPayments: TeacherPaymentFromBackend[],
+    teachers: Teacher[],
+    targetMonth: string,
+  ): DashboardFinanceSummary {
+    // Converte pagamentos de alunos
+    const studentPayments: MonthlyFeeSummary[] = payments.map((p) => ({
+      paymentId: p.id,
+      studentId: p.studentId,
+      studentName: p.studentName,
+      className: p.className,
+      teacherName: '', // Não retornado pela API
+      monthlyFee: p.amount,
+      status: p.status as 'PENDENTE' | 'PAGO' | 'ATRASADO',
+      dueDate: p.dueDate,
+      paidAt: p.paymentDate || undefined,
+      paymentMethod: (p.paymentMethod as PaymentMethod) || undefined,
+    }));
+
+    // Converte pagamentos de professores
+    const teacherPaymentsSummary: TeacherPaymentSummary[] = teacherPayments.map((tp) => ({
+      teacherPaymentId: tp.id,
+      teacherId: tp.teacherId,
+      teacherName: tp.teacherName,
+      totalStudents: tp.activeStudents,
+      totalRevenue: tp.realizedRevenue,
+      amountToPay: tp.amountToPay,
+      status: tp.status === 'PAGO' ? 'PAGO' : 'PENDENTE',
+      paidAt: tp.paidAt || undefined,
+      paymentMethod: (tp.paymentMethod as PaymentMethod) || undefined,
+    }));
+
+    // Calcula totais
+    const totalMonthlyFees = studentPayments.reduce((sum, p) => sum + p.monthlyFee, 0);
+    const paidMonthlyFees = studentPayments
+      .filter((p) => p.status === 'PAGO')
+      .reduce((sum, p) => sum + p.monthlyFee, 0);
+    const pendingMonthlyFees = studentPayments
+      .filter((p) => p.status === 'PENDENTE')
+      .reduce((sum, p) => sum + p.monthlyFee, 0);
+    const overdueMonthlyFees = studentPayments
+      .filter((p) => p.status === 'ATRASADO')
+      .reduce((sum, p) => sum + p.monthlyFee, 0);
+
+    const totalTeacherPayments = teacherPaymentsSummary.reduce((sum, p) => sum + p.amountToPay, 0);
+    const paidTeacherPayments = teacherPaymentsSummary
+      .filter((p) => p.status === 'PAGO')
+      .reduce((sum, p) => sum + p.amountToPay, 0);
+    const pendingTeacherPayments = teacherPaymentsSummary
+      .filter((p) => p.status === 'PENDENTE')
+      .reduce((sum, p) => sum + p.amountToPay, 0);
+
+    const netProfit = paidMonthlyFees - paidTeacherPayments;
+
+    return {
+      totalMonthlyFees,
+      paidMonthlyFees,
+      pendingMonthlyFees,
+      overdueMonthlyFees,
+      totalTeacherPayments,
+      paidTeacherPayments,
+      pendingTeacherPayments,
+      netProfit,
+      teacherPayments: teacherPaymentsSummary,
+      studentPayments,
+    };
+  },
+
+  /**
+   * Constrói resumo a partir dos alunos cadastrados (fallback)
+   */
+  buildSummaryFromStudents(
+    students: Student[],
+    teachers: Teacher[],
+    classes: Class[],
+    targetMonth: string,
+  ): DashboardFinanceSummary {
     const activeStudents = students.filter((s) => s.status === 'active');
 
-    // Filtra alunos que já estavam matriculados no mês alvo
-    // A mensalidade só conta a partir do mês de cadastro
+    // Filtra alunos matriculados no mês
     const enrolledStudentsForMonth = activeStudents.filter((student) => {
-      if (!student.enrollmentDate) {
-        return true; // Se não tem data de matrícula, considera como matriculado
-      }
+      if (!student.enrollmentDate) return true;
       const enrollmentDate = new Date(student.enrollmentDate);
       const enrollmentMonth = `${enrollmentDate.getFullYear()}-${String(enrollmentDate.getMonth() + 1).padStart(2, '0')}`;
-      // Aluno aparece se o mês de matrícula for igual ou anterior ao mês alvo
       return enrollmentMonth <= targetMonth;
     });
 
-    // Carrega status de pagamentos para o mês específico
-    const teacherPaymentStatus = loadPaymentStatus(`${TEACHER_PAYMENTS_STATUS_KEY}_${targetMonth}`);
-    const studentPaymentStatus = loadPaymentStatus(`${STUDENT_PAYMENTS_STATUS_KEY}_${targetMonth}`);
-
-    // Verifica se é mês futuro
     const now = new Date();
     const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-    const isFutureMonth = targetMonth > currentMonth;
     const isPastMonth = targetMonth < currentMonth;
 
-    // Calcula mensalidades dos alunos (apenas os matriculados no mês)
+    // Calcula mensalidades dos alunos
     const studentPayments: MonthlyFeeSummary[] = enrolledStudentsForMonth.map((student) => {
       const cls = classes.find((c) => c.id === student.class || c.name === student.class);
       const teacher = teachers.find((t) => t.id === student.teacher || t.nome === student.teacher);
 
-      // Verifica status do pagamento
-      const paymentInfo = studentPaymentStatus.get(student.id);
-      let status: 'PENDENTE' | 'PAGO' | 'ATRASADO' = paymentInfo?.status || 'PENDENTE';
-
-      // Se não tem status definido e é mês passado, marca como atrasado
-      // Se é mês futuro, mantém como pendente
-      if (!paymentInfo && !isFutureMonth) {
-        const today = new Date();
-        if (isPastMonth || today.getDate() > 10) {
-          status = 'ATRASADO';
-        }
+      // Status padrão baseado na data
+      let status: 'PENDENTE' | 'PAGO' | 'ATRASADO' = 'PENDENTE';
+      if (isPastMonth || (targetMonth === currentMonth && now.getDate() > 10)) {
+        status = 'ATRASADO';
       }
 
-      // Obtém lista de meses atrasados do aluno (a partir da data de matrícula)
-      const overdueMonths = getOverdueMonthsForStudent(
-        student.id,
-        targetMonth,
-        student.enrollmentDate,
-      );
-
       return {
+        paymentId: '', // Fallback não tem ID real
         studentId: student.id,
         studentName: student.name,
         className: cls?.name || student.class || 'Sem turma',
@@ -224,17 +263,13 @@ export const dashboardFinanceService = {
         monthlyFee: student.monthlyFee || 0,
         status,
         dueDate: this.getMonthDueDate(targetMonth),
-        paidAt: paymentInfo?.paidAt,
-        paymentMethod: paymentInfo?.paymentMethod,
-        overdueMonths: overdueMonths.length > 0 ? overdueMonths : undefined,
       };
     });
 
-    // Agrupa alunos por professor e calcula pagamentos (apenas os matriculados no mês)
+    // Agrupa alunos por professor
     const teacherStudentMap = new Map<string, { teacher: Teacher; students: Student[] }>();
 
     for (const student of enrolledStudentsForMonth) {
-      // Encontra o professor do aluno (por turma ou direto)
       const cls = classes.find((c) => c.id === student.class || c.name === student.class);
       const teacherId = cls?.teacherId || student.teacher;
       const teacher = teachers.find((t) => t.id === teacherId || t.nome === teacherId);
@@ -250,23 +285,20 @@ export const dashboardFinanceService = {
     }
 
     // Cria resumo de pagamentos de professores
-    const teacherPayments: TeacherPaymentSummary[] = [];
+    const teacherPaymentsSummary: TeacherPaymentSummary[] = [];
 
     teacherStudentMap.forEach(({ teacher, students: teacherStudents }) => {
       const totalRevenue = teacherStudents.reduce((sum, s) => sum + (s.monthlyFee || 0), 0);
       const amountToPay = Math.round(totalRevenue * TEACHER_PARTICIPATION_RATE);
 
-      const paymentInfo = teacherPaymentStatus.get(teacher.id);
-
-      teacherPayments.push({
+      teacherPaymentsSummary.push({
+        teacherPaymentId: '', // Fallback não tem ID real
         teacherId: teacher.id,
         teacherName: teacher.nome,
         totalStudents: teacherStudents.length,
         totalRevenue,
         amountToPay,
-        status: paymentInfo?.status === 'PAGO' ? 'PAGO' : 'PENDENTE',
-        paidAt: paymentInfo?.paidAt,
-        paymentMethod: paymentInfo?.paymentMethod,
+        status: 'PENDENTE',
       });
     });
 
@@ -282,13 +314,9 @@ export const dashboardFinanceService = {
       .filter((p) => p.status === 'ATRASADO')
       .reduce((sum, p) => sum + p.monthlyFee, 0);
 
-    const totalTeacherPayments = teacherPayments.reduce((sum, p) => sum + p.amountToPay, 0);
-    const paidTeacherPayments = teacherPayments
-      .filter((p) => p.status === 'PAGO')
-      .reduce((sum, p) => sum + p.amountToPay, 0);
-    const pendingTeacherPayments = teacherPayments
-      .filter((p) => p.status === 'PENDENTE')
-      .reduce((sum, p) => sum + p.amountToPay, 0);
+    const totalTeacherPayments = teacherPaymentsSummary.reduce((sum, p) => sum + p.amountToPay, 0);
+    const paidTeacherPayments = 0;
+    const pendingTeacherPayments = totalTeacherPayments;
 
     const netProfit = paidMonthlyFees - paidTeacherPayments;
 
@@ -301,93 +329,99 @@ export const dashboardFinanceService = {
       paidTeacherPayments,
       pendingTeacherPayments,
       netProfit,
-      teacherPayments,
+      teacherPayments: teacherPaymentsSummary,
       studentPayments,
     };
   },
 
   /**
-   * Marca pagamento de aluno como pago
-   * @param studentId ID do aluno
-   * @param month Mês no formato YYYY-MM (opcional, padrão: mês atual)
-   * @param paymentMethod Forma de pagamento (opcional)
+   * Marca pagamento de aluno como pago via API
+   * Retorna erro 403 se houver mensalidades anteriores pendentes
    */
   async markStudentPaymentAsPaid(
-    studentId: string,
+    paymentId: string,
     month?: string,
     paymentMethod?: PaymentMethod,
   ): Promise<void> {
-    const targetMonth = month || this.getCurrentMonth();
-    const status = loadPaymentStatus(`${STUDENT_PAYMENTS_STATUS_KEY}_${targetMonth}`);
-    status.set(studentId, {
-      id: studentId,
-      status: 'PAGO',
-      paidAt: new Date().toISOString(),
-      paymentMethod,
-    });
-    savePaymentStatus(`${STUDENT_PAYMENTS_STATUS_KEY}_${targetMonth}`, status);
+    try {
+      await api.post('/payments/record', {
+        paymentId,
+        paymentDate: new Date().toISOString(),
+        paymentMethod: paymentMethod || 'PIX',
+      });
+    } catch (error: any) {
+      console.error('[dashboardFinanceService] Error marking payment as paid:', error);
+      // Repassa a mensagem de erro do backend
+      if (error.response?.data?.message) {
+        throw new Error(error.response.data.message);
+      }
+      throw error;
+    }
   },
 
   /**
-   * Marca pagamento de aluno como pendente
-   * @param studentId ID do aluno
-   * @param month Mês no formato YYYY-MM (opcional, padrão: mês atual)
+   * Adiantamento de pagamento para professor
+   * Quando o aluno não paga, o admin pode pagar do bolso
+   * Isso cria uma despesa do tipo ADIANTAMENTO_PROFESSOR
    */
-  async markStudentPaymentAsPending(studentId: string, month?: string): Promise<void> {
-    const targetMonth = month || this.getCurrentMonth();
-    const status = loadPaymentStatus(`${STUDENT_PAYMENTS_STATUS_KEY}_${targetMonth}`);
-    status.set(studentId, {
-      id: studentId,
-      status: 'PENDENTE',
-      paymentMethod: undefined,
-    });
-    savePaymentStatus(`${STUDENT_PAYMENTS_STATUS_KEY}_${targetMonth}`, status);
+  async advancePaymentForTeacher(
+    paymentId: string,
+    teacherName: string,
+    studentName: string,
+    paymentMethod?: PaymentMethod,
+  ): Promise<{ paymentId: string; expenseId: string }> {
+    try {
+      const { data } = await api.post<{ paymentId: string; expenseId: string }>(
+        '/payments/advance',
+        {
+          paymentId,
+          paymentDate: new Date().toISOString(),
+          paymentMethod: paymentMethod || 'PIX',
+          teacherName,
+          studentName,
+        },
+      );
+      return data;
+    } catch (error) {
+      console.error('[dashboardFinanceService] Error advancing payment:', error);
+      throw error;
+    }
   },
 
   /**
-   * Marca pagamento de professor como pago
-   * @param teacherId ID do professor
-   * @param month Mês no formato YYYY-MM (opcional, padrão: mês atual)
-   * @param paymentMethod Forma de pagamento (opcional)
+   * Marca pagamento de aluno como pendente via API
+   */
+  async markStudentPaymentAsPending(paymentId: string, month?: string): Promise<void> {
+    console.warn('[dashboardFinanceService] Revert payment not implemented in API');
+    throw new Error('Revert payment not implemented in backend API');
+  },
+
+  /**
+   * Marca pagamento de professor como pago via API
    */
   async markTeacherPaymentAsPaid(
-    teacherId: string,
+    teacherPaymentId: string,
     month?: string,
     paymentMethod?: PaymentMethod,
   ): Promise<void> {
-    const targetMonth = month || this.getCurrentMonth();
-    const status = loadPaymentStatus(`${TEACHER_PAYMENTS_STATUS_KEY}_${targetMonth}`);
-    status.set(teacherId, {
-      id: teacherId,
-      status: 'PAGO',
-      paidAt: new Date().toISOString(),
-      paymentMethod,
-    });
-    savePaymentStatus(`${TEACHER_PAYMENTS_STATUS_KEY}_${targetMonth}`, status);
+    try {
+      await api.post('/teacher-payments/record', {
+        teacherPaymentId,
+        paymentDate: new Date().toISOString(),
+        paymentMethod: paymentMethod || 'PIX',
+      });
+    } catch (error) {
+      console.error('[dashboardFinanceService] Error marking teacher payment as paid:', error);
+      throw error;
+    }
   },
 
   /**
-   * Marca pagamento de professor como pendente
-   * @param teacherId ID do professor
-   * @param month Mês no formato YYYY-MM (opcional, padrão: mês atual)
+   * Marca pagamento de professor como pendente via API
    */
-  async markTeacherPaymentAsPending(teacherId: string, month?: string): Promise<void> {
-    const targetMonth = month || this.getCurrentMonth();
-    const status = loadPaymentStatus(`${TEACHER_PAYMENTS_STATUS_KEY}_${targetMonth}`);
-    status.set(teacherId, {
-      id: teacherId,
-      status: 'PENDENTE',
-      paymentMethod: undefined,
-    });
-    savePaymentStatus(`${TEACHER_PAYMENTS_STATUS_KEY}_${targetMonth}`, status);
-  },
-
-  /**
-   * Reseta todos os pagamentos para o novo mês
-   */
-  async resetMonthlyPayments(): Promise<void> {
-    localStorage.removeItem(TEACHER_PAYMENTS_STATUS_KEY);
-    localStorage.removeItem(STUDENT_PAYMENTS_STATUS_KEY);
+  async markTeacherPaymentAsPending(teacherPaymentId: string, month?: string): Promise<void> {
+    console.warn('[dashboardFinanceService] Revert teacher payment not implemented in API');
+    throw new Error('Revert teacher payment not implemented in backend API');
   },
 
   /**
@@ -402,7 +436,6 @@ export const dashboardFinanceService = {
 
   /**
    * Retorna a data de vencimento de um mês específico (dia 10)
-   * @param month Mês no formato YYYY-MM
    */
   getMonthDueDate(month: string): string {
     return `${month}-10`;
@@ -422,27 +455,4 @@ export const dashboardFinanceService = {
    * Formata valor em reais
    */
   formatCurrency,
-
-  /**
-   * Limpa dados mock antigos do localStorage
-   * Deve ser chamado uma vez para limpar dados fictícios
-   */
-  clearMockData(): void {
-    // Remove pagamentos de alunos e professores fictícios do financeService
-    localStorage.removeItem('finance_student_payments');
-    localStorage.removeItem('finance_teacher_payrolls');
-    console.log('[dashboardFinanceService] Dados mock antigos removidos');
-  },
 };
-
-// Limpa dados mock antigos automaticamente na primeira carga
-if (typeof window !== 'undefined') {
-  const cleanupKey = 'dashboard_finance_mock_cleaned_v2';
-  if (!localStorage.getItem(cleanupKey)) {
-    localStorage.removeItem('finance_student_payments');
-    localStorage.removeItem('finance_teacher_payrolls');
-    localStorage.setItem(cleanupKey, 'true');
-    console.log('[dashboardFinanceService] Dados mock antigos limpos automaticamente');
-  }
-}
-

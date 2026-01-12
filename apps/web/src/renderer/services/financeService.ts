@@ -1,5 +1,5 @@
 // ============================================================================
-// IMPORTS
+// FINANCE SERVICE - Integrado com API Real
 // ============================================================================
 
 import { api } from './api';
@@ -9,7 +9,13 @@ import { api } from './api';
 // ============================================================================
 
 export type ExpenseStatus = 'PAGO' | 'PENDENTE' | 'AGENDADO';
-export type ExpenseCategory = 'UTILIDADES' | 'SUPRIMENTOS' | 'MANUTENÇÃO' | 'MARKETING' | 'OUTROS' | 'ADIANTAMENTO_PROFESSOR';
+export type ExpenseCategory =
+  | 'UTILIDADES'
+  | 'SUPRIMENTOS'
+  | 'MANUTENÇÃO'
+  | 'MARKETING'
+  | 'OUTROS'
+  | 'ADIANTAMENTO_PROFESSOR';
 
 export type PaymentMethod = 'PIX' | 'DINHEIRO' | 'MISTO';
 
@@ -43,135 +49,54 @@ export interface TeacherPayroll {
   teacherName: string;
   shift: string;
   activeStudents: number;
-  totalContracts: number; // Total de contratos ativos
-  participationRate: number; // Ex: 0.50 para 50%
+  totalContracts: number;
+  participationRate: number;
   amountToPay: number;
-  realizedRevenue: number; // Receita realizada (baixas)
+  realizedRevenue: number;
   status: 'PENDENTE' | 'CONCLUIDO';
   paidAt?: string;
   paymentMethod?: PaymentMethod;
-  month: string; // Ex: '2025-11'
+  month: string;
 }
 
 export interface FinanceSummary {
-  realizedRevenue: number; // Receita realizada (mensalidades pagas)
-  expenses: number; // Despesas (Prof + Ops)
-  netProfit: number; // Lucro líquido
-  defaultAmount: number; // Inadimplência (A Receber)
+  realizedRevenue: number;
+  expenses: number;
+  netProfit: number;
+  defaultAmount: number;
   month: string;
 }
 
 // ============================================================================
-// STORAGE KEYS
+// INTERFACES FROM BACKEND
 // ============================================================================
 
-const EXPENSES_KEY = 'finance_expenses';
-const PAYMENTS_KEY = 'finance_student_payments';
-const PAYROLLS_KEY = 'finance_teacher_payrolls';
-const CATEGORIES_KEY = 'finance_expense_categories';
-
-// ============================================================================
-// HELPERS
-// ============================================================================
-
-function generateId(): string {
-  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+interface PaymentFromBackend {
+  id: string;
+  studentId: string;
+  studentName: string;
+  className: string;
+  amount: number;
+  dueDate: string;
+  paymentDate: string | null;
+  status: string;
+  paymentMethod: string | null;
+  enrollmentId: string;
 }
 
-function readFromStorage<T>(key: string, defaultValue: T[] = []): T[] {
-  if (typeof window === 'undefined') return defaultValue;
-  try {
-    const raw = localStorage.getItem(key);
-    const parsed = raw ? JSON.parse(raw) : defaultValue;
-    return Array.isArray(parsed) ? parsed : defaultValue;
-  } catch {
-    return defaultValue;
-  }
-}
-
-function writeToStorage<T>(key: string, data: T[]): void {
-  if (typeof window === 'undefined') return;
-  localStorage.setItem(key, JSON.stringify(data));
-}
-
-// ============================================================================
-// MOCK DATA INITIALIZATION
-// ============================================================================
-
-function initializeMockData(): void {
-  // Get current month for mock data
-  const now = new Date();
-  const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-
-  // Initialize expenses if empty (mantém apenas despesas operacionais)
-  const expenses = readFromStorage<Expense>(EXPENSES_KEY);
-  if (expenses.length === 0) {
-    const mockExpenses: Expense[] = [
-      {
-        id: generateId(),
-        description: 'Conta de Energia (Enel)',
-        category: 'UTILIDADES',
-        dueDate: `${currentMonth}-05`,
-        amount: 450,
-        status: 'PAGO',
-        paidAt: `${currentMonth}-05`,
-        createdAt: new Date().toISOString(),
-      },
-      {
-        id: generateId(),
-        description: 'Internet Fibra',
-        category: 'UTILIDADES',
-        dueDate: `${currentMonth}-10`,
-        amount: 120,
-        status: 'PAGO',
-        paidAt: `${currentMonth}-10`,
-        createdAt: new Date().toISOString(),
-      },
-      {
-        id: generateId(),
-        description: 'Material de Limpeza',
-        category: 'SUPRIMENTOS',
-        dueDate: `${currentMonth}-12`,
-        amount: 85.5,
-        status: 'PENDENTE',
-        createdAt: new Date().toISOString(),
-      },
-      {
-        id: generateId(),
-        description: 'Manutenção Ar Condicionado',
-        category: 'MANUTENÇÃO',
-        dueDate: `${currentMonth}-15`,
-        amount: 250,
-        status: 'AGENDADO',
-        createdAt: new Date().toISOString(),
-      },
-    ];
-    writeToStorage(EXPENSES_KEY, mockExpenses);
-  }
-
-  // NÃO inicializa mais pagamentos de alunos fictícios
-  // O dashboardFinanceService usa dados reais dos alunos cadastrados
-
-  // NÃO inicializa mais folhas de pagamento fictícias
-  // O dashboardFinanceService usa dados reais dos professores cadastrados
-
-  // Initialize categories - always ensure correct list without SALÁRIOS
-  const defaultCategories = ['UTILIDADES', 'SUPRIMENTOS', 'MANUTENÇÃO', 'MARKETING', 'OUTROS'];
-  const categories = readFromStorage<string>(CATEGORIES_KEY);
-  // Remove SALÁRIOS if it exists and ensure default categories are present
-  const filteredCategories = categories.filter((cat) => cat !== 'SALÁRIOS');
-  if (
-    categories.length === 0 ||
-    filteredCategories.length !== categories.length ||
-    !defaultCategories.every((cat) => filteredCategories.includes(cat))
-  ) {
-    writeToStorage(CATEGORIES_KEY, defaultCategories);
-  }
-}
-
-// Initialize on module load
-if (typeof window !== 'undefined') {
-  initializeMockData();
+interface TeacherPaymentFromBackend {
+  id: string;
+  teacherId: string;
+  teacherName: string;
+  month: string;
+  activeStudents: number;
+  totalContracts: number;
+  participationRate: number;
+  realizedRevenue: number;
+  amountToPay: number;
+  status: string;
+  paidAt: string | null;
+  paymentMethod: string | null;
 }
 
 // ============================================================================
@@ -180,7 +105,6 @@ if (typeof window !== 'undefined') {
 
 export const expenseService = {
   async getAll(): Promise<Expense[]> {
-    // Note: Backend doesn't have a getAll endpoint, use getByMonth for current month
     const now = new Date();
     const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     return this.getByMonth(currentMonth);
@@ -208,11 +132,10 @@ export const expenseService = {
         dueDate: data.dueDate,
         paidAt: data.paidAt,
         status: data.status,
-        paymentId: data.paymentId, // Include paymentId for tracking overdue payment expenses
+        paymentId: data.paymentId,
       });
       console.log('[expenseService] Expense created:', response);
-      
-      // Backend returns { message, expenseId }, return constructed expense object
+
       return {
         id: response.expenseId,
         description: data.description,
@@ -231,27 +154,50 @@ export const expenseService = {
   },
 
   async update(id: string, data: Partial<Expense>): Promise<Expense> {
-    console.warn('[expenseService] Expense update functionality is not yet implemented in the backend API');
-    throw new Error('Expense update functionality is not yet implemented in the backend API');
+    console.warn('[expenseService] Expense update not yet implemented in backend');
+    throw new Error('Expense update not yet implemented in backend API');
   },
 
   async delete(id: string): Promise<void> {
-    console.warn('[expenseService] Expense deletion functionality is not yet implemented in the backend API');
-    throw new Error('Expense deletion functionality is not yet implemented in the backend API');
+    console.warn('[expenseService] Expense deletion not yet implemented in backend');
+    throw new Error('Expense deletion not yet implemented in backend API');
   },
 
   async markAsPaid(id: string): Promise<Expense> {
-    console.warn('[expenseService] Mark expense as paid functionality is not yet implemented in the backend API');
-    throw new Error('Mark expense as paid functionality is not yet implemented in the backend API');
+    try {
+      const { data } = await api.patch<{ expenseId: string }>(`/expenses/${id}/pay`, {
+        paidAt: new Date().toISOString(),
+      });
+      // Return updated expense - fetch from API or construct locally
+      const expenses = await this.getByMonth(
+        `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`,
+      );
+      const updated = expenses.find((e) => e.id === id);
+      if (updated) return updated;
+      throw new Error('Expense not found after update');
+    } catch (error) {
+      console.error('[expenseService] Error marking expense as paid:', error);
+      throw error;
+    }
   },
 
   async revertToPending(id: string): Promise<Expense> {
-    console.warn('[expenseService] Revert expense to pending functionality is not yet implemented in the backend API');
-    throw new Error('Revert expense to pending functionality is not yet implemented in the backend API');
+    try {
+      await api.patch(`/expenses/${id}/revert`);
+      // Return updated expense - fetch from API or construct locally
+      const expenses = await this.getByMonth(
+        `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`,
+      );
+      const updated = expenses.find((e) => e.id === id);
+      if (updated) return updated;
+      throw new Error('Expense not found after update');
+    } catch (error) {
+      console.error('[expenseService] Error reverting expense to pending:', error);
+      throw error;
+    }
   },
 
   async getCategories(): Promise<string[]> {
-    // Return hardcoded categories including the new one
     return Promise.resolve([
       'UTILIDADES',
       'SUPRIMENTOS',
@@ -263,145 +209,162 @@ export const expenseService = {
   },
 
   async addCategory(category: string): Promise<string[]> {
-    // Categories are hardcoded, return all categories
     return this.getCategories();
   },
 };
 
 // ============================================================================
-// STUDENT PAYMENT SERVICE
+// STUDENT PAYMENT SERVICE - Integrado com API
 // ============================================================================
 
 export const studentPaymentService = {
   async getAll(): Promise<StudentPayment[]> {
-    return Promise.resolve(readFromStorage<StudentPayment>(PAYMENTS_KEY));
+    const now = new Date();
+    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    return this.getByMonth(currentMonth);
   },
 
   async getByMonth(month: string): Promise<StudentPayment[]> {
-    const payments = readFromStorage<StudentPayment>(PAYMENTS_KEY);
-    return Promise.resolve(payments.filter((p) => p.dueDate.startsWith(month)));
+    console.log('[studentPaymentService] Fetching payments for month:', month);
+    try {
+      const { data } = await api.get<{ payments: PaymentFromBackend[] }>(
+        `/payments/month/${month}`,
+      );
+      console.log('[studentPaymentService] Received payments:', data);
+
+      return data.payments.map((p) => ({
+        id: p.id,
+        studentId: p.studentId,
+        studentName: p.studentName,
+        enrollmentId: p.enrollmentId,
+        amount: p.amount,
+        dueDate: p.dueDate,
+        paidAt: p.paymentDate || undefined,
+        status: p.status as 'PENDENTE' | 'PAGO' | 'ATRASADO',
+        paymentMethod: (p.paymentMethod as PaymentMethod) || undefined,
+      }));
+    } catch (error) {
+      console.error('[studentPaymentService] Error fetching payments:', error);
+      return [];
+    }
   },
 
   async getPending(): Promise<StudentPayment[]> {
-    const payments = readFromStorage<StudentPayment>(PAYMENTS_KEY);
-    return Promise.resolve(
-      payments.filter((p) => p.status === 'PENDENTE' || p.status === 'ATRASADO'),
-    );
+    const payments = await this.getAll();
+    return payments.filter((p) => p.status === 'PENDENTE' || p.status === 'ATRASADO');
   },
 
   async receivePayment(id: string, paymentMethod: PaymentMethod): Promise<StudentPayment> {
-    const list = readFromStorage<StudentPayment>(PAYMENTS_KEY);
-    const idx = list.findIndex((p) => p.id === id);
-    if (idx === -1) throw new Error('Pagamento não encontrado');
+    console.log('[studentPaymentService] Recording payment:', id, paymentMethod);
+    try {
+      await api.post('/payments/record', {
+        paymentId: id,
+        paymentDate: new Date().toISOString(),
+        paymentMethod,
+      });
 
-    const updated: StudentPayment = {
-      ...list[idx],
-      status: 'PAGO',
-      paidAt: new Date().toISOString(),
-      paymentMethod,
-    };
-    list[idx] = updated;
-    writeToStorage(PAYMENTS_KEY, list);
-    return Promise.resolve(updated);
+      // Return updated payment
+      const payments = await this.getAll();
+      const payment = payments.find((p) => p.id === id);
+      if (!payment) throw new Error('Pagamento não encontrado');
+      return payment;
+    } catch (error) {
+      console.error('[studentPaymentService] Error recording payment:', error);
+      throw error;
+    }
   },
 
   async revertToPending(id: string): Promise<StudentPayment> {
-    const list = readFromStorage<StudentPayment>(PAYMENTS_KEY);
-    const idx = list.findIndex((p) => p.id === id);
-    if (idx === -1) throw new Error('Pagamento não encontrado');
-
-    const updated: StudentPayment = {
-      ...list[idx],
-      status: 'PENDENTE',
-      paidAt: undefined,
-      paymentMethod: undefined,
-    };
-    list[idx] = updated;
-    writeToStorage(PAYMENTS_KEY, list);
-    return Promise.resolve(updated);
+    console.warn('[studentPaymentService] Revert payment not yet implemented in backend');
+    throw new Error('Revert payment not yet implemented in backend API');
   },
 
   async create(data: Omit<StudentPayment, 'id'>): Promise<StudentPayment> {
-    const payment: StudentPayment = {
-      ...data,
-      id: generateId(),
-    };
-    const list = readFromStorage<StudentPayment>(PAYMENTS_KEY);
-    list.unshift(payment);
-    writeToStorage(PAYMENTS_KEY, list);
-    return Promise.resolve(payment);
+    console.warn('[studentPaymentService] Create payment directly not implemented');
+    throw new Error('Use enrollment creation to generate payments');
   },
 };
 
 // ============================================================================
-// TEACHER PAYROLL SERVICE
+// TEACHER PAYROLL SERVICE - Integrado com API
 // ============================================================================
 
 export const teacherPayrollService = {
   async getAll(): Promise<TeacherPayroll[]> {
-    return Promise.resolve(readFromStorage<TeacherPayroll>(PAYROLLS_KEY));
+    const now = new Date();
+    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    return this.getByMonth(currentMonth);
   },
 
   async getByMonth(month: string): Promise<TeacherPayroll[]> {
-    const payrolls = readFromStorage<TeacherPayroll>(PAYROLLS_KEY);
-    return Promise.resolve(payrolls.filter((p) => p.month === month));
+    console.log('[teacherPayrollService] Fetching teacher payments for month:', month);
+    try {
+      const { data } = await api.get<{ teacherPayments: TeacherPaymentFromBackend[] }>(
+        `/teacher-payments/month/${month}`,
+      );
+      console.log('[teacherPayrollService] Received teacher payments:', data);
+
+      return data.teacherPayments.map((tp) => ({
+        id: tp.id,
+        teacherId: tp.teacherId,
+        teacherName: tp.teacherName,
+        shift: '', // Shift não é retornado pelo backend
+        activeStudents: tp.activeStudents,
+        totalContracts: tp.totalContracts,
+        participationRate: tp.participationRate,
+        amountToPay: tp.amountToPay,
+        realizedRevenue: tp.realizedRevenue,
+        status: tp.status === 'PAGO' ? 'CONCLUIDO' : 'PENDENTE',
+        paidAt: tp.paidAt || undefined,
+        paymentMethod: (tp.paymentMethod as PaymentMethod) || undefined,
+        month: tp.month,
+      }));
+    } catch (error) {
+      console.error('[teacherPayrollService] Error fetching teacher payments:', error);
+      return [];
+    }
   },
 
   async getPending(): Promise<TeacherPayroll[]> {
-    const payrolls = readFromStorage<TeacherPayroll>(PAYROLLS_KEY);
-    return Promise.resolve(payrolls.filter((p) => p.status === 'PENDENTE'));
+    const payrolls = await this.getAll();
+    return payrolls.filter((p) => p.status === 'PENDENTE');
   },
 
   async closePayroll(id: string, paymentMethod: PaymentMethod): Promise<TeacherPayroll> {
-    const list = readFromStorage<TeacherPayroll>(PAYROLLS_KEY);
-    const idx = list.findIndex((p) => p.id === id);
-    if (idx === -1) throw new Error('Folha não encontrada');
+    console.log('[teacherPayrollService] Recording teacher payment:', id, paymentMethod);
+    try {
+      await api.post('/teacher-payments/record', {
+        teacherPaymentId: id,
+        paymentDate: new Date().toISOString(),
+        paymentMethod,
+      });
 
-    const updated: TeacherPayroll = {
-      ...list[idx],
-      status: 'CONCLUIDO',
-      paidAt: new Date().toISOString(),
-      paymentMethod,
-    };
-    list[idx] = updated;
-    writeToStorage(PAYROLLS_KEY, list);
-    return Promise.resolve(updated);
+      // Return updated payroll
+      const payrolls = await this.getAll();
+      const payroll = payrolls.find((p) => p.id === id);
+      if (!payroll) throw new Error('Folha não encontrada');
+      return payroll;
+    } catch (error) {
+      console.error('[teacherPayrollService] Error recording teacher payment:', error);
+      throw error;
+    }
   },
 
   async revertToPending(id: string): Promise<TeacherPayroll> {
-    const list = readFromStorage<TeacherPayroll>(PAYROLLS_KEY);
-    const idx = list.findIndex((p) => p.id === id);
-    if (idx === -1) throw new Error('Folha não encontrada');
-
-    const updated: TeacherPayroll = {
-      ...list[idx],
-      status: 'PENDENTE',
-      paidAt: undefined,
-      paymentMethod: undefined,
-    };
-    list[idx] = updated;
-    writeToStorage(PAYROLLS_KEY, list);
-    return Promise.resolve(updated);
+    console.warn('[teacherPayrollService] Revert payment not yet implemented in backend');
+    throw new Error('Revert payment not yet implemented in backend API');
   },
 
   async create(data: Omit<TeacherPayroll, 'id'>): Promise<TeacherPayroll> {
-    const payroll: TeacherPayroll = {
-      ...data,
-      id: generateId(),
-    };
-    const list = readFromStorage<TeacherPayroll>(PAYROLLS_KEY);
-    list.unshift(payroll);
-    writeToStorage(PAYROLLS_KEY, list);
-    return Promise.resolve(payroll);
+    console.warn('[teacherPayrollService] Create payroll directly not implemented');
+    throw new Error('Teacher payments are calculated automatically');
   },
 };
 
 // ============================================================================
 // FINANCE SUMMARY SERVICE
-// Integra dados reais de alunos e professores com despesas operacionais
 // ============================================================================
 
-// Importação dinâmica para evitar dependência circular
 const loadDashboardFinanceService = async () => {
   const { dashboardFinanceService } = await import('./dashboardFinanceService');
   return dashboardFinanceService;
@@ -409,38 +372,25 @@ const loadDashboardFinanceService = async () => {
 
 export const financeSummaryService = {
   async getSummary(month: string): Promise<FinanceSummary> {
-    // Carrega o dashboardFinanceService dinamicamente
     const dashboardService = await loadDashboardFinanceService();
-
-    // Obtém dados reais de alunos e professores
     const realFinanceData = await dashboardService.getFinanceSummary(month);
 
-    // Obtém despesas operacionais
     const expenses = await expenseService.getByMonth(month);
     const paidExpenses = expenses.filter((e) => e.status === 'PAGO');
     const operationalExpenses = paidExpenses.reduce((sum, e) => sum + e.amount, 0);
 
-    // Usa dados reais de mensalidades
     const realizedRevenue = realFinanceData.paidMonthlyFees;
-
-    // Usa dados reais de pagamentos de professores
     const teacherPayments = realFinanceData.paidTeacherPayments;
-
-    // Total de despesas = professores pagos + despesas operacionais
     const totalExpenses = teacherPayments + operationalExpenses;
-
-    // Lucro líquido = receita realizada - total de despesas
     const netProfit = realizedRevenue - totalExpenses;
-
-    // Inadimplência = mensalidades pendentes + atrasadas
     const defaultAmount = realFinanceData.pendingMonthlyFees + realFinanceData.overdueMonthlyFees;
 
-    return Promise.resolve({
+    return {
       realizedRevenue,
       expenses: totalExpenses,
       netProfit,
       defaultAmount,
       month,
-    });
+    };
   },
 };

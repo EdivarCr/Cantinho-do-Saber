@@ -109,7 +109,7 @@ export function ClassesList() {
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newClassName, setNewClassName] = useState('');
-  const [newClassShift, setNewClassShift] = useState<ClassShift>('MANHA');
+  const [newClassShift, setNewClassShift] = useState<ClassShift>('MATUTINO');
   const [newClassTeacherId, setNewClassTeacherId] = useState('');
   const [editingClassId, setEditingClassId] = useState<string | null>(null);
 
@@ -132,10 +132,10 @@ export function ClassesList() {
         classService.getAll(),
         teacherService.getAll(),
       ]);
-      
+
       // Verifica se é professor dentro da função para garantir valor atualizado
       const userIsProfessor = user?.role === 'PROFESSOR';
-      
+
       // Se for professor, filtra apenas suas turmas
       if (userIsProfessor && user?.email) {
         const teacher = teachersData.find((t) => t.email === user.email);
@@ -152,7 +152,7 @@ export function ClassesList() {
       } else {
         setClasses(classesData);
       }
-      
+
       setTeachers(teachersData);
     } catch (error) {
       addToast('Erro ao carregar dados', 'error');
@@ -174,7 +174,7 @@ export function ClassesList() {
   const openCreateModal = () => {
     setEditingClassId(null);
     setNewClassName('');
-    setNewClassShift('MANHA');
+    setNewClassShift('MATUTINO');
     setNewClassTeacherId('');
     setIsModalOpen(true);
   };
@@ -230,7 +230,7 @@ export function ClassesList() {
       // Create Mode
       const tempId = `temp-${Date.now()}`;
       const scheduleForShift: TimeSlot =
-        newClassShift === 'MANHA'
+        newClassShift === 'MATUTINO'
           ? { start: '08:00', end: '12:00' }
           : { start: '13:00', end: '17:30' };
       const optimisticClass: Class = {
@@ -257,7 +257,7 @@ export function ClassesList() {
 
   const resetForm = () => {
     setNewClassName('');
-    setNewClassShift('MANHA');
+    setNewClassShift('MATUTINO');
     setNewClassTeacherId('');
   };
 
@@ -306,9 +306,9 @@ export function ClassesList() {
               <div key={turma.id} className={styles.card}>
                 <div className={styles.cardHeader}>
                   <span
-                    className={`${styles.badge} ${turma.shift === 'MANHA' ? styles.badgeMorning : styles.badgeAfternoon}`}
+                    className={`${styles.badge} ${turma.shift === 'MATUTINO' ? styles.badgeMorning : styles.badgeAfternoon}`}
                   >
-                    {turma.shift === 'MANHA' ? 'MANHÃ' : 'TARDE'}
+                    {turma.shift === 'MATUTINO' ? 'MANHÃ' : 'TARDE'}
                   </span>
                   {turma.schedule && (
                     <span className={styles.scheduleTime}>
@@ -406,15 +406,15 @@ export function ClassesList() {
               <div className={styles.shiftToggle}>
                 <button
                   type="button"
-                  className={`${styles.shiftButton} ${newClassShift === 'MANHA' ? styles.shiftButtonSelected : styles.shiftButtonUnselected}`}
-                  onClick={() => setNewClassShift('MANHA')}
+                  className={`${styles.shiftButton} ${newClassShift === 'MATUTINO' ? styles.shiftButtonSelected : styles.shiftButtonUnselected}`}
+                  onClick={() => setNewClassShift('MATUTINO')}
                 >
                   Manhã
                 </button>
                 <button
                   type="button"
-                  className={`${styles.shiftButton} ${newClassShift === 'TARDE' ? styles.shiftButtonSelected : styles.shiftButtonUnselected}`}
-                  onClick={() => setNewClassShift('TARDE')}
+                  className={`${styles.shiftButton} ${newClassShift === 'VESPERTINO' ? styles.shiftButtonSelected : styles.shiftButtonUnselected}`}
+                  onClick={() => setNewClassShift('VESPERTINO')}
                 >
                   Tarde
                 </button>
@@ -454,4 +454,3 @@ export function ClassesList() {
     </div>
   );
 }
-

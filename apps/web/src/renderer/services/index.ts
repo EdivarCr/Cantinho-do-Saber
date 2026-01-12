@@ -17,7 +17,7 @@ export * from './lessons';
 export * from './attendance';
 export * from './users';
 
-// Legacy services (to be phased out)
+// Services using real API (refactored from localStorage)
 export { studentService } from './studentService';
 export { teacherService } from './teacherService';
 export { classService } from './classService';

@@ -232,22 +232,72 @@ export function FinancesDashboard() {
 
     try {
       const payment = modal.data as MonthlyFeeSummary;
+      if (!payment.paymentId) {
+        addToast('Pagamento não encontrado no sistema', 'error');
+        return;
+      }
       await dashboardFinanceService.markStudentPaymentAsPaid(
-        payment.studentId,
+        payment.paymentId,
         getTargetMonth(),
         selectedPaymentMethod as DashboardPaymentMethod,
       );
       addToast('Mensalidade recebida com sucesso!', 'success');
       setModal({ type: null });
       loadData();
-    } catch (error) {
-      addToast('Erro ao receber mensalidade', 'error');
+    } catch (error: any) {
+      // Mostra a mensagem específica do backend (ex: mensalidades anteriores pendentes)
+      const errorMessage = error?.message || 'Erro ao receber mensalidade';
+      addToast(errorMessage, 'error');
     }
   };
 
-  const handleMarkRealStudentPending = async (studentId: string) => {
+  // Abre modal para adiantamento de pagamento (quando aluno não paga)
+  const handleOpenAdvancePaymentModal = (payment: MonthlyFeeSummary) => {
+    setSelectedPaymentMethod(null);
+    setModal({ type: 'advancePayment', data: payment });
+  };
+
+  // Confirma adiantamento de pagamento
+  const handleConfirmAdvancePayment = async () => {
+    if (!modal.data || !selectedPaymentMethod) {
+      addToast('Selecione a forma de pagamento', 'error');
+      return;
+    }
+
     try {
-      await dashboardFinanceService.markStudentPaymentAsPending(studentId, getTargetMonth());
+      const payment = modal.data as MonthlyFeeSummary;
+      if (!payment.paymentId) {
+        addToast('Pagamento não encontrado no sistema', 'error');
+        return;
+      }
+      await dashboardFinanceService.advancePaymentForTeacher(
+        payment.paymentId,
+        payment.teacherName,
+        payment.studentName,
+        selectedPaymentMethod as DashboardPaymentMethod,
+      );
+      addToast(
+        `Adiantamento realizado! O valor será registrado como despesa operacional.`,
+        'success',
+      );
+      setModal({ type: null });
+      loadData();
+    } catch (error: any) {
+      const errorMessage = error?.message || 'Erro ao realizar adiantamento';
+      addToast(errorMessage, 'error');
+    }
+  };
+
+  const handleMarkRealStudentPending = async (payment: MonthlyFeeSummary) => {
+    try {
+      if (!payment.paymentId) {
+        addToast('Pagamento não encontrado no sistema', 'error');
+        return;
+      }
+      await dashboardFinanceService.markStudentPaymentAsPending(
+        payment.paymentId,
+        getTargetMonth(),
+      );
       addToast('Pagamento revertido para pendente!', 'success');
       loadData();
     } catch (error) {
@@ -270,8 +320,12 @@ export function FinancesDashboard() {
 
     try {
       const payment = modal.data as TeacherPaymentSummary;
+      if (!payment.teacherPaymentId) {
+        addToast('Pagamento de professor não encontrado no sistema', 'error');
+        return;
+      }
       await dashboardFinanceService.markTeacherPaymentAsPaid(
-        payment.teacherId,
+        payment.teacherPaymentId,
         getTargetMonth(),
         selectedPaymentMethod as DashboardPaymentMethod,
       );
@@ -283,9 +337,16 @@ export function FinancesDashboard() {
     }
   };
 
-  const handleMarkRealTeacherPending = async (teacherId: string) => {
+  const handleMarkRealTeacherPending = async (payment: TeacherPaymentSummary) => {
     try {
-      await dashboardFinanceService.markTeacherPaymentAsPending(teacherId, getTargetMonth());
+      if (!payment.teacherPaymentId) {
+        addToast('Pagamento de professor não encontrado no sistema', 'error');
+        return;
+      }
+      await dashboardFinanceService.markTeacherPaymentAsPending(
+        payment.teacherPaymentId,
+        getTargetMonth(),
+      );
       addToast('Folha revertida para pendente!', 'success');
       loadData();
     } catch (error) {
@@ -989,12 +1050,29 @@ export function FinancesDashboard() {
                                     </span>
                                   </div>
                                 ) : (
-                                  <button
-                                    className={styles.receiveBtn}
-                                    onClick={() => handleOpenRealStudentPaymentModal(payment)}
+                                  <div
+                                    style={{
+                                      display: 'flex',
+                                      gap: '8px',
+                                      justifyContent: 'flex-end',
+                                    }}
                                   >
-                                    💵 Receber
-                                  </button>
+                                    <button
+                                      className={styles.receiveBtn}
+                                      onClick={() => handleOpenRealStudentPaymentModal(payment)}
+                                    >
+                                      💵 Receber
+                                    </button>
+                                    {payment.status === 'ATRASADO' && (
+                                      <button
+                                        className={styles.revertBtn}
+                                        onClick={() => handleOpenAdvancePaymentModal(payment)}
+                                        title="Adiantar pagamento (custo para a escola)"
+                                      >
+                                        ⚠️ Adiantar
+                                      </button>
+                                    )}
+                                  </div>
                                 )
                               ) : (
                                 <div className={styles.paidActions}>
@@ -1664,6 +1742,101 @@ export function FinancesDashboard() {
                 disabled={!selectedPaymentMethod}
               >
                 ✓ Confirmar Pagamento
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Adiantamento de Pagamento (Admin paga do bolso) */}
+      {modal.type === 'advancePayment' && modal.data && (
+        <div className={styles.modalOverlay} onClick={() => setModal({ type: null })}>
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <div>
+                <h2>⚠️ Adiantamento de Pagamento</h2>
+                <p>Aluno: {(modal.data as MonthlyFeeSummary).studentName}</p>
+              </div>
+              <button className={styles.closeModalBtn} onClick={() => setModal({ type: null })}>
+                ×
+              </button>
+            </div>
+            <div className={styles.modalBody}>
+              <div
+                style={{
+                  background: '#fff3cd',
+                  border: '1px solid #ffc107',
+                  borderRadius: '8px',
+                  padding: '12px',
+                  marginBottom: '16px',
+                }}
+              >
+                <strong>⚠️ Atenção:</strong> Este adiantamento será registrado como{' '}
+                <strong>despesa operacional</strong> (custo para a escola). Use quando o aluno não
+                pagou mas você precisa pagar o professor.
+              </div>
+
+              <div className={styles.paymentSummary}>
+                <div className={styles.paymentSummaryItem}>
+                  <span className={styles.paymentSummaryLabel}>Turma</span>
+                  <span className={styles.paymentSummaryValue}>
+                    {(modal.data as MonthlyFeeSummary).className}
+                  </span>
+                </div>
+                <div className={styles.paymentSummaryItem}>
+                  <span className={styles.paymentSummaryLabel}>Professor(a)</span>
+                  <span className={styles.paymentSummaryValue}>
+                    {(modal.data as MonthlyFeeSummary).teacherName}
+                  </span>
+                </div>
+                <div className={styles.paymentSummaryItem}>
+                  <span className={styles.paymentSummaryLabel}>Vencimento Original</span>
+                  <span className={styles.paymentSummaryValue}>
+                    {formatDate((modal.data as MonthlyFeeSummary).dueDate)}
+                  </span>
+                </div>
+              </div>
+
+              <div className={styles.modalAmount}>
+                <label>VALOR DO ADIANTAMENTO</label>
+                <span className={styles.amountNegative}>
+                  {formatCurrency((modal.data as MonthlyFeeSummary).monthlyFee)}
+                </span>
+              </div>
+
+              <div className={styles.paymentMethods}>
+                <label>Forma de Pagamento *</label>
+                {(['PIX', 'DINHEIRO', 'MISTO'] as PaymentMethod[]).map((method) => (
+                  <div
+                    key={method}
+                    className={`${styles.paymentMethodOption} ${selectedPaymentMethod === method ? styles.selected : ''}`}
+                    onClick={() => setSelectedPaymentMethod(method)}
+                  >
+                    <div className={styles.methodIcon}>
+                      {method === 'PIX' && '💳'}
+                      {method === 'DINHEIRO' && '💵'}
+                      {method === 'MISTO' && '💰'}
+                    </div>
+                    <span>
+                      {method === 'PIX' && 'PIX'}
+                      {method === 'DINHEIRO' && 'Dinheiro'}
+                      {method === 'MISTO' && 'Misto (PIX + Dinheiro)'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className={styles.modalFooter}>
+              <button className={styles.cancelBtn} onClick={() => setModal({ type: null })}>
+                Cancelar
+              </button>
+              <button
+                className={styles.confirmBtn}
+                onClick={handleConfirmAdvancePayment}
+                disabled={!selectedPaymentMethod}
+                style={{ background: '#dc3545' }}
+              >
+                ⚠️ Confirmar Adiantamento
               </button>
             </div>
           </div>

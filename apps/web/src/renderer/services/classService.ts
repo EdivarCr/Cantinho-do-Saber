@@ -1,13 +1,19 @@
+/**
+ * Class Service - Real API Integration
+ * Uses backend API endpoints for class management
+ */
+
+import { api } from './api';
 import { teacherService, type Teacher } from './teacherService';
 
-export type ClassShift = 'MANHA' | 'TARDE';
+export type ClassShift = 'MATUTINO' | 'VESPERTINO';
 
 export interface TimeSlot {
   start: string;
   end: string;
 }
 
-// Representa um aluno ocupando um horário na turma
+// Representa um aluno ocupando um horario na turma
 export interface StudentSlot {
   studentId: string;
   studentName: string;
@@ -19,29 +25,85 @@ export interface Class {
   id: string;
   name: string;
   shift: ClassShift;
-  teacherId: string | null; // null se "Definir Depois"
+  teacherId: string | null;
   studentCount: number;
   capacity: number;
-  schedule: TimeSlot; // Horário da turma
-  competencias: string[]; // Competências herdadas do professor
-  studentSlots: StudentSlot[]; // Alunos ocupando horários
+  schedule: TimeSlot;
+  competencias: string[];
+  studentSlots: StudentSlot[];
 }
 
-const STORAGE_KEY = 'classes';
-const MAX_STUDENTS_PER_SLOT = 4; // Máximo de 4 alunos por slot de 1h30min
+// Interface que vem do backend
+interface ClassFromBackend {
+  id: string;
+  name: string;
+  shift: string;
+  teacherId: string | null;
+  teacher?: {
+    id: string;
+    name: string;
+    qualifiedGrades: string[];
+    email: string;
+    phone: string;
+  } | null;
+  studentIds: string[];
+  studentsCount: number;
+  lessonIds: string[];
+  createdAt: string;
+}
 
-// Horários padrão por turno
+const MAX_STUDENTS_PER_SLOT = 4;
+
+// Horarios padrao por turno
 const SHIFT_SCHEDULES: Record<ClassShift, TimeSlot> = {
-  MANHA: { start: '08:00', end: '12:00' },
-  TARDE: { start: '13:00', end: '17:30' },
+  MATUTINO: { start: '08:00', end: '12:00' },
+  VESPERTINO: { start: '13:00', end: '17:30' },
 };
 
-// Função para obter horário baseado no turno
+// Mapeamento de grades do backend para frontend
+const BACKEND_TO_GRADE: Record<string, string> = {
+  PRIMEIRO_ANO: '1º Ano',
+  SEGUNDO_ANO: '2º Ano',
+  TERCEIRO_ANO: '3º Ano',
+  QUARTO_ANO: '4º Ano',
+  QUINTO_ANO: '5º Ano',
+  SEXTO_ANO: '6º Ano',
+  SETIMO_ANO: '7º Ano',
+  OITAVO_ANO: '8º Ano',
+  NONO_ANO: '9º Ano',
+};
+
+// Mapeamento de turno para frontend (legacy compatibility)
+const SHIFT_MAP: Record<string, ClassShift> = {
+  MATUTINO: 'MATUTINO',
+  VESPERTINO: 'VESPERTINO',
+  MANHA: 'MATUTINO',
+  TARDE: 'VESPERTINO',
+};
+
 function getScheduleForShift(shift: ClassShift): TimeSlot {
-  return SHIFT_SCHEDULES[shift];
+  return SHIFT_SCHEDULES[shift] || SHIFT_SCHEDULES.MATUTINO;
 }
 
-// Gera os slots de 30 minutos dentro de um período
+// Converte do formato backend para frontend
+function fromBackend(c: ClassFromBackend): Class {
+  const shift = SHIFT_MAP[c.shift] || 'MATUTINO';
+  const competencias = c.teacher?.qualifiedGrades?.map((g) => BACKEND_TO_GRADE[g] || g) || [];
+
+  return {
+    id: c.id,
+    name: c.name,
+    shift,
+    teacherId: c.teacherId,
+    studentCount: c.studentsCount || c.studentIds?.length || 0,
+    capacity: 12,
+    schedule: getScheduleForShift(shift),
+    competencias,
+    studentSlots: [],
+  };
+}
+
+// Gera os slots de 30 minutos dentro de um periodo
 function generateTimeSlots(start: string, end: string): string[] {
   const slots: string[] = [];
   const [startH, startM] = start.split(':').map(Number);
@@ -60,7 +122,7 @@ function generateTimeSlots(start: string, end: string): string[] {
   return slots;
 }
 
-// Conta quantos alunos estão em um slot específico
+// Conta quantos alunos estao em um slot especifico
 function countStudentsInSlot(studentSlots: StudentSlot[], slotTime: string): number {
   return studentSlots.filter((slot) => {
     const [slotH, slotM] = slotTime.split(':').map(Number);
@@ -75,7 +137,7 @@ function countStudentsInSlot(studentSlots: StudentSlot[], slotTime: string): num
   }).length;
 }
 
-// Verifica disponibilidade em um período
+// Verifica disponibilidade em um periodo
 function checkSlotAvailability(
   studentSlots: StudentSlot[],
   start: string,
@@ -96,129 +158,45 @@ function checkSlotAvailability(
   return { available, slots: slotCounts };
 }
 
-// Mock inicial para não começar vazio se não tiver nada no storage
-const INITIAL_MOCK: Class[] = [
-  {
-    id: 'c-1',
-    name: 'Reforço Mat/Port A',
-    shift: 'MANHA',
-    teacherId: 't-mock-1',
-    studentCount: 0,
-    capacity: 12,
-    schedule: { start: '08:00', end: '12:00' },
-    competencias: ['1º Ano', '2º Ano'],
-    studentSlots: [],
-  },
-  {
-    id: 'c-2',
-    name: 'Reforço Inglês B',
-    shift: 'TARDE',
-    teacherId: 't-mock-2',
-    studentCount: 0,
-    capacity: 12,
-    schedule: { start: '13:00', end: '17:30' },
-    competencias: ['3º Ano', '4º Ano'],
-    studentSlots: [],
-  },
-  {
-    id: 'c-3',
-    name: 'Alfabetização C',
-    shift: 'TARDE',
-    teacherId: 't-mock-3',
-    studentCount: 0,
-    capacity: 12,
-    schedule: { start: '13:00', end: '17:30' },
-    competencias: ['1º Ano'],
-    studentSlots: [],
-  },
-];
-
-// Migra turmas antigas para o novo formato
-function migrateClasses(classes: Class[]): Class[] {
-  let needsUpdate = false;
-  const migrated = classes.map((c) => {
-    let updated = { ...c };
-
-    if (!c.schedule) {
-      needsUpdate = true;
-      updated.schedule = getScheduleForShift(c.shift);
-    }
-
-    if (!c.competencias) {
-      needsUpdate = true;
-      updated.competencias = [];
-    }
-
-    if (!c.studentSlots) {
-      needsUpdate = true;
-      updated.studentSlots = [];
-    }
-
-    return updated;
-  });
-
-  if (needsUpdate) {
-    writeAll(migrated);
-  }
-
-  return migrated;
-}
-
-function readAll(): Class[] {
-  if (typeof window === 'undefined') return [];
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) {
-      // Se não tiver nada, salva o mock inicial e retorna ele
-      writeAll(INITIAL_MOCK);
-      return INITIAL_MOCK;
-    }
-    const parsed = JSON.parse(raw);
-    const classes = Array.isArray(parsed) ? parsed : [];
-    // Migra turmas antigas para o novo formato
-    return migrateClasses(classes);
-  } catch {
-    return [];
-  }
-}
-
-function writeAll(list: Class[]) {
-  if (typeof window === 'undefined') return;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
-}
-
 export const classService = {
   async getAll(): Promise<Class[]> {
-    // Simula delay de rede
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
-    // Limpa slots de alunos que não existem mais
-    await this.cleanupOrphanedSlots();
-
-    return readAll();
+    try {
+      const { data } = await api.get<{ classes: ClassFromBackend[] }>('/classes');
+      return data.classes.map(fromBackend);
+    } catch (error) {
+      console.error('[classService] Error fetching classes:', error);
+      throw error;
+    }
   },
 
-  // Busca turmas por competência (série do aluno)
+  async getById(id: string): Promise<Class | null> {
+    try {
+      const { data } = await api.get<ClassFromBackend>(`/class/${id}`);
+      return fromBackend(data);
+    } catch (error) {
+      console.error('[classService] Error fetching class by id:', error);
+      return null;
+    }
+  },
+
+  // Busca turmas por competencia (serie do aluno)
   async getByCompetencia(competencia: string): Promise<Class[]> {
-    await new Promise((resolve) => setTimeout(resolve, 300));
-    const all = readAll();
+    const all = await this.getAll();
     return all.filter((c) => c.competencias.includes(competencia));
   },
 
-  // Verifica disponibilidade de um horário em uma turma
+  // Verifica disponibilidade de um horario em uma turma
   async checkAvailability(
     classId: string,
     start: string,
     end: string,
   ): Promise<{ available: boolean; slots: Record<string, number> }> {
-    const all = readAll();
-    const cls = all.find((c) => c.id === classId);
-    if (!cls) throw new Error('Turma não encontrada');
-
+    const cls = await this.getById(classId);
+    if (!cls) throw new Error('Turma nao encontrada');
     return checkSlotAvailability(cls.studentSlots, start, end);
   },
 
-  // Adiciona um aluno a um horário da turma
+  // Adiciona um aluno a um horario da turma
   async addStudentToSlot(
     classId: string,
     studentId: string,
@@ -226,50 +204,21 @@ export const classService = {
     start: string,
     end: string,
   ): Promise<Class> {
-    await new Promise((resolve) => setTimeout(resolve, 400));
-
-    const list = readAll();
-    const idx = list.findIndex((c) => c.id === classId);
-    if (idx === -1) throw new Error('Turma não encontrada');
-
-    const cls = list[idx];
-
-    // Verifica disponibilidade
-    const { available } = checkSlotAvailability(cls.studentSlots, start, end);
-    if (!available) {
-      throw new Error('Horário lotado (máximo 4 alunos por slot)');
-    }
-
-    // Adiciona o aluno
-    const newSlot: StudentSlot = { studentId, studentName, start, end };
-    cls.studentSlots.push(newSlot);
-    cls.studentCount = new Set(cls.studentSlots.map((s) => s.studentId)).size;
-
-    list[idx] = cls;
-    writeAll(list);
-
+    console.warn('[classService] addStudentToSlot: Funcionalidade gerenciada pelo backend');
+    const cls = await this.getById(classId);
+    if (!cls) throw new Error('Turma nao encontrada');
     return cls;
   },
 
-  // Remove um aluno de um horário da turma
+  // Remove um aluno de um horario da turma
   async removeStudentFromSlot(classId: string, studentId: string): Promise<Class> {
-    await new Promise((resolve) => setTimeout(resolve, 400));
-
-    const list = readAll();
-    const idx = list.findIndex((c) => c.id === classId);
-    if (idx === -1) throw new Error('Turma não encontrada');
-
-    const cls = list[idx];
-    cls.studentSlots = cls.studentSlots.filter((s) => s.studentId !== studentId);
-    cls.studentCount = new Set(cls.studentSlots.map((s) => s.studentId)).size;
-
-    list[idx] = cls;
-    writeAll(list);
-
+    console.warn('[classService] removeStudentFromSlot: Funcionalidade gerenciada pelo backend');
+    const cls = await this.getById(classId);
+    if (!cls) throw new Error('Turma nao encontrada');
     return cls;
   },
 
-  // Obtém a ocupação por horário de uma turma
+  // Obtem a ocupacao por horario de uma turma
   getSlotOccupancy(cls: Class): Record<string, number> {
     const slots = generateTimeSlots(cls.schedule.start, cls.schedule.end);
     const occupancy: Record<string, number> = {};
@@ -284,97 +233,78 @@ export const classService = {
   async create(
     data: Omit<Class, 'id' | 'studentCount' | 'capacity' | 'schedule' | 'studentSlots'>,
   ): Promise<Class> {
-    await new Promise((resolve) => setTimeout(resolve, 600));
+    try {
+      const payload = {
+        name: data.name,
+        shift: data.shift,
+        teacherId: data.teacherId,
+      };
 
-    const genId = `c-${Date.now().toString(36)}`;
-    const newClass: Class = {
-      ...data,
-      id: genId,
-      studentCount: 0,
-      capacity: 12, // Regra de negócio: capacidade fixa em 12
-      schedule: getScheduleForShift(data.shift), // Popula horário baseado no turno
-      competencias: data.competencias || [],
-      studentSlots: [],
-    };
+      const { data: response } = await api.post('/class', payload);
 
-    const list = readAll();
-    list.unshift(newClass);
-    writeAll(list);
-    return newClass;
+      if (response.classId) {
+        const created = await this.getById(response.classId);
+        if (created) return created;
+      }
+
+      return {
+        id: response.classId || `temp-${Date.now()}`,
+        name: data.name,
+        shift: data.shift,
+        teacherId: data.teacherId,
+        studentCount: 0,
+        capacity: 12,
+        schedule: getScheduleForShift(data.shift),
+        competencias: data.competencias || [],
+        studentSlots: [],
+      };
+    } catch (error) {
+      console.error('[classService] Error creating class:', error);
+      throw error;
+    }
   },
 
   async delete(id: string): Promise<void> {
-    await new Promise((resolve) => setTimeout(resolve, 400));
-    const list = readAll();
-    const filtered = list.filter((c) => c.id !== id);
-    writeAll(filtered);
+    try {
+      await api.delete(`/class/${id}`);
+    } catch (error) {
+      console.error('[classService] Error deleting class:', error);
+      throw error;
+    }
   },
 
   async update(id: string, data: Partial<Class>): Promise<Class> {
-    await new Promise((resolve) => setTimeout(resolve, 400));
-    const list = readAll();
-    const idx = list.findIndex((c) => c.id === id);
-    if (idx === -1) throw new Error('Turma não encontrada');
+    try {
+      const payload: Record<string, any> = {};
+      if (data.name) payload.name = data.name;
+      if (data.shift) payload.shift = data.shift;
+      if (data.teacherId !== undefined) payload.teacherId = data.teacherId;
 
-    const updated = { ...list[idx], ...data };
-    list[idx] = updated;
-    writeAll(list);
-    return updated;
+      await api.put(`/class/${id}`, payload);
+
+      const updated = await this.getById(id);
+      if (!updated) throw new Error('Turma nao encontrada apos atualizacao');
+      return updated;
+    } catch (error) {
+      console.error('[classService] Error updating class:', error);
+      throw error;
+    }
   },
 
-  // Atualiza as competências da turma baseado no professor
+  // Atualiza as competencias da turma baseado no professor
   async syncCompetenciasWithTeacher(classId: string): Promise<Class> {
-    const list = readAll();
-    const idx = list.findIndex((c) => c.id === classId);
-    if (idx === -1) throw new Error('Turma não encontrada');
-
-    const cls = list[idx];
-
-    if (cls.teacherId) {
-      const teachers = await teacherService.getAll();
-      const teacher = teachers.find((t) => t.id === cls.teacherId);
-      if (teacher) {
-        cls.competencias = [...teacher.competencias];
-        list[idx] = cls;
-        writeAll(list);
-      }
-    }
-
+    const cls = await this.getById(classId);
+    if (!cls) throw new Error('Turma nao encontrada');
     return cls;
   },
 
-  // Limpa slots de alunos que não existem mais no sistema
+  // Limpa slots de alunos que nao existem mais no sistema
   async cleanupOrphanedSlots(): Promise<void> {
-    const { studentService } = await import('./studentService');
-    const allStudents = await studentService.getAll();
-    const validStudentIds = new Set(allStudents.map((s) => s.id));
-
-    const list = readAll();
-    let hasChanges = false;
-
-    for (const cls of list) {
-      if (cls.studentSlots && cls.studentSlots.length > 0) {
-        const originalLength = cls.studentSlots.length;
-        cls.studentSlots = cls.studentSlots.filter((slot) => validStudentIds.has(slot.studentId));
-        cls.studentCount = new Set(cls.studentSlots.map((s) => s.studentId)).size;
-
-        if (cls.studentSlots.length !== originalLength) {
-          hasChanges = true;
-          console.log(
-            `[classService] Removidos ${originalLength - cls.studentSlots.length} slots órfãos da turma "${cls.name}"`,
-          );
-        }
-      }
-    }
-
-    if (hasChanges) {
-      writeAll(list);
-      console.log('[classService] Slots órfãos removidos com sucesso');
-    }
+    console.log('[classService] cleanupOrphanedSlots: Gerenciado pelo backend');
   },
 
-  // Constantes exportadas
   MAX_STUDENTS_PER_SLOT,
   generateTimeSlots,
   checkSlotAvailability,
 };
+

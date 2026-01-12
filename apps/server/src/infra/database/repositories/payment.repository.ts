@@ -75,13 +75,30 @@ export class PaymentRepository implements IPaymentRepository {
         dueDate: { lt: currentDate }, // Vencimento já passou
         deletedAt: null,
       },
-      include: { 
-        enrollment: { 
-          include: { 
-            student: true 
-          } 
-        } 
+      include: {
+        enrollment: {
+          include: {
+            student: true,
+          },
+        },
       },
+    });
+    return payments.map((p) => PaymentMapper.toDomain(p as PaymentSchema));
+  }
+
+  async findPreviousUnpaidByEnrollment(
+    enrollmentId: string,
+    beforeDate: Date,
+  ): Promise<PaymentEntity[]> {
+    const payments = await prisma.payment.findMany({
+      where: {
+        enrollmentId,
+        dueDate: { lt: beforeDate },
+        status: { in: ['PENDENTE', 'ATRASADO'] },
+        deletedAt: null,
+      },
+      include: { enrollment: true },
+      orderBy: { dueDate: 'asc' },
     });
     return payments.map((p) => PaymentMapper.toDomain(p as PaymentSchema));
   }

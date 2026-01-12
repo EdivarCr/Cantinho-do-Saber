@@ -55,17 +55,10 @@ export function StudentDetails() {
 
       const data = await studentService.getStudentById(id);
       setStudent(data);
-    } catch (error) {
-      console.log('API não disponível. Carregando dados locais...');
-      const localStudents = JSON.parse(localStorage.getItem('students') || '[]');
-      const foundStudent = localStudents.find((s: Student) => s.id === id);
-
-      if (foundStudent) {
-        setStudent(foundStudent);
-      } else {
-        addToast('Aluno não encontrado', 'error');
-        navigate('/dashboard/students');
-      }
+    } catch (error: any) {
+      console.error('Erro ao carregar aluno:', error);
+      addToast('Aluno não encontrado', 'error');
+      navigate('/dashboard/students');
     } finally {
       setIsLoading(false);
     }
@@ -78,12 +71,9 @@ export function StudentDetails() {
       await studentService.deleteStudent(id);
       addToast('Aluno excluído com sucesso!', 'success');
       navigate('/dashboard/students');
-    } catch (error) {
-      const localStudents = JSON.parse(localStorage.getItem('students') || '[]');
-      const updatedStudents = localStudents.filter((s: Student) => s.id !== id);
-      localStorage.setItem('students', JSON.stringify(updatedStudents));
-      addToast('Aluno excluído com sucesso!', 'success');
-      navigate('/dashboard/students');
+    } catch (error: any) {
+      console.error('Erro ao excluir aluno:', error);
+      addToast(error.message || 'Erro ao excluir aluno', 'error');
     } finally {
       setShowDeleteConfirm(false);
     }

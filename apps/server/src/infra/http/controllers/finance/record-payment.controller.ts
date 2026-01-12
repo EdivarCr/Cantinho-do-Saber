@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { validateBody } from '../../../http-body-validator/validator.middleware';
 import { ResourceNotFoundError } from 'apps/server/src/core/errors/resource-not-found.error';
+import { NotAllowedError } from 'apps/server/src/core/errors/not-allowed.error';
 import { injectable } from 'tsyringe';
 import { checkJwt } from '../../../auth/auth.middleware';
 import { RecordPaymentUseCase } from 'apps/server/src/domain/application/use-cases/finance/record-payment.use-case';
@@ -10,6 +11,7 @@ const recordPaymentBodySchema = z.object({
   paymentId: z.string(),
   paymentDate: z.string().transform((val) => new Date(val)),
   paymentMethod: z.string(),
+  skipPreviousCheck: z.boolean().optional(),
 });
 
 type RecordPaymentBodySchema = z.infer<typeof recordPaymentBodySchema>;
@@ -41,6 +43,8 @@ export class RecordPaymentController {
       switch (exception.constructor) {
         case ResourceNotFoundError:
           return res.status(404).json({ message });
+        case NotAllowedError:
+          return res.status(403).json({ message });
         default:
           return res.status(500).json({ message });
       }

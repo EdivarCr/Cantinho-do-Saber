@@ -118,32 +118,15 @@ export function RegisterStudentForm() {
       // Agora sim salva o aluno no mock
       const result = await studentService.createStudent(completeStudentData);
 
-      // Adiciona o aluno ao slot da turma
+      // Adiciona o aluno ao slot da turma (se necessário)
       if (result && result.id && selectedTimeSlot) {
         await classService.addStudentToSlot(
           selectedClass.id,
           result.id,
-          formData.name, // Usa o nome do formData
+          formData.name,
           selectedTimeSlot.start,
           selectedTimeSlot.end,
         );
-
-        // Atualiza com dados adicionais de agendamento
-        const localStudents: any[] = JSON.parse(localStorage.getItem('students') || '[]');
-        const studentIndex = localStudents.findIndex((s: any) => s.id === result.id);
-
-        if (studentIndex >= 0) {
-          localStudents[studentIndex] = {
-            ...localStudents[studentIndex],
-            classId: selectedClass.id,
-            schedule: {
-              shift: selectedClass.turno,
-              ...selectedTimeSlot,
-            },
-            firstPaymentDate: financialData.firstPaymentDate,
-          };
-          localStorage.setItem('students', JSON.stringify(localStudents));
-        }
       }
 
       addToast('Matrícula realizada com sucesso!', 'success');

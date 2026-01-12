@@ -286,7 +286,7 @@ export function SmartScheduleSearch({ studentGrade, onBack, onNext }: SmartSched
       const allClasses = await classService.getAll();
 
       // Filtra por turno e competência do aluno
-      const shiftValue: ClassShift = shift === 'Manhã' ? 'MANHA' : 'TARDE';
+      const shiftValue: ClassShift = shift === 'Manhã' ? 'MATUTINO' : 'VESPERTINO';
       const filteredClasses = allClasses.filter((cls) => {
         // Verifica se o turno corresponde
         if (cls.shift !== shiftValue) return false;

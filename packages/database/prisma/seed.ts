@@ -1,4 +1,11 @@
-import { PrismaClient, SchoolGrade, Shift, AccessLevel, AttendanceStatus, Kinship } from '@prisma/client';
+import {
+  PrismaClient,
+  SchoolGrade,
+  Shift,
+  AccessLevel,
+  AttendanceStatus,
+  Kinship,
+} from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { ulid } from 'ulid';
 
@@ -62,7 +69,11 @@ async function main() {
       pixKey: 'maria.silva@pix.com',
       expertise: 'Educação Infantil e Fundamental I',
       email: 'maria.silva@cantinho.com',
-      qualifiedGrades: [SchoolGrade.PRIMEIRO_ANO, SchoolGrade.SEGUNDO_ANO, SchoolGrade.TERCEIRO_ANO],
+      qualifiedGrades: [
+        SchoolGrade.PRIMEIRO_ANO,
+        SchoolGrade.SEGUNDO_ANO,
+        SchoolGrade.TERCEIRO_ANO,
+      ],
     },
     {
       name: 'João Pedro Oliveira',
@@ -410,15 +421,17 @@ async function main() {
   // ============================================================================
   console.log('💰 Creating enrollments and payments...');
 
-  const monthlyAmount = 350.00; // R$ 350,00 mensalidade
+  const monthlyAmount = 350.0; // R$ 350,00 mensalidade
+  const currentYear = new Date().getFullYear();
+  const currentMonth = new Date().getMonth() + 1;
 
   for (const student of students) {
     // Criar contrato
     const contract = await prisma.contract.create({
       data: {
         id: ulid(),
-        signatureDate: new Date('2024-02-01'),
-        dueDate: new Date('2024-12-31'),
+        signatureDate: new Date(currentYear, 0, 15), // Jan do ano atual
+        dueDate: new Date(currentYear, 11, 31), // Dec do ano atual
         monthlyAmount,
         createdAt: new Date(),
       },
@@ -431,24 +444,25 @@ async function main() {
         studentId: student.id,
         contractId: contract.id,
         status: 'ATIVA',
-        enrollmentDate: new Date('2024-02-01'),
+        enrollmentDate: new Date(currentYear, 0, 15),
         createdAt: new Date(),
       },
     });
 
-    // Criar 12 pagamentos (janeiro a dezembro 2024)
+    // Criar 12 pagamentos (janeiro a dezembro do ano atual)
     for (let month = 1; month <= 12; month++) {
-      // Marcar primeiros 8 meses como pagos, resto pendente
-      const isPaid = month <= 8;
-      
+      // Marcar meses anteriores como pagos, mês atual e futuros como pendente
+      const isPast = month < currentMonth;
+      const isPaid = isPast && Math.random() > 0.2; // 80% pagos dos meses passados
+
       await prisma.payment.create({
         data: {
           id: ulid(),
           enrollmentId: enrollment.id,
           amount: monthlyAmount,
-          dueDate: new Date(2024, month - 1, 10), // Dia 10
-          paymentDate: isPaid ? new Date(2024, month - 1, 8) : null,
-          status: isPaid ? 'PAGO' : 'PENDENTE',
+          dueDate: new Date(currentYear, month - 1, 10), // Dia 10
+          paymentDate: isPaid ? new Date(currentYear, month - 1, 8) : null,
+          status: isPaid ? 'PAGO' : isPast ? 'ATRASADO' : 'PENDENTE',
           paymentMethod: isPaid ? 'PIX' : null,
           createdAt: new Date(),
         },
@@ -469,7 +483,7 @@ async function main() {
         id: ulid(),
         description: 'Conta de Energia (Enel)',
         category: 'UTILIDADES',
-        amount: 450.00,
+        amount: 450.0,
         dueDate: new Date(2024, 10, 15), // Nov 2024
         paidAt: new Date(2024, 10, 14),
         status: 'PAGO',
@@ -479,7 +493,7 @@ async function main() {
         id: ulid(),
         description: 'Conta de Água (Sabesp)',
         category: 'UTILIDADES',
-        amount: 180.00,
+        amount: 180.0,
         dueDate: new Date(2024, 10, 20),
         paidAt: new Date(2024, 10, 19),
         status: 'PAGO',
@@ -489,7 +503,7 @@ async function main() {
         id: ulid(),
         description: 'Internet Fibra (Vivo)',
         category: 'UTILIDADES',
-        amount: 120.00,
+        amount: 120.0,
         dueDate: new Date(2024, 10, 5),
         paidAt: new Date(2024, 10, 4),
         status: 'PAGO',
@@ -499,7 +513,7 @@ async function main() {
         id: ulid(),
         description: 'Material Escolar (Cadernos, Lápis)',
         category: 'SUPRIMENTOS',
-        amount: 280.00,
+        amount: 280.0,
         dueDate: new Date(2024, 10, 10),
         status: 'PENDENTE',
         createdAt: new Date(),
@@ -523,34 +537,38 @@ async function main() {
     });
 
     const activeStudents = teacherClasses.reduce(
-      (sum, c) => sum + c.students.filter(s => !s.deletedAt).length,
-      0
+      (sum, c) => sum + c.students.filter((s) => !s.deletedAt).length,
+      0,
     );
 
     // Buscar pagamentos realizados dos alunos deste professor (mês atual)
-    const studentIds = teacherClasses.flatMap(c => c.students.map(s => s.id));
+    const studentIds = teacherClasses.flatMap((c) => c.students.map((s) => s.id));
+    const startOfMonth = new Date(currentYear, currentMonth - 1, 1);
+    const endOfMonth = new Date(currentYear, currentMonth, 0, 23, 59, 59);
+
     const payments = await prisma.payment.findMany({
       where: {
         enrollment: { studentId: { in: studentIds } },
         status: 'PAGO',
         dueDate: {
-          gte: new Date(2024, 10, 1),
-          lte: new Date(2024, 10, 30),
+          gte: startOfMonth,
+          lte: endOfMonth,
         },
       },
     });
 
     const realizedRevenue = payments.reduce((sum, p) => sum + p.amount, 0);
-    const amountToPay = realizedRevenue * 0.50; // 50% de participação
+    const amountToPay = realizedRevenue * 0.5; // 50% de participação
+    const monthStr = `${currentYear}-${String(currentMonth).padStart(2, '0')}`;
 
     await prisma.teacherPayment.create({
       data: {
         id: ulid(),
         teacherId: teacher.id,
-        month: '2024-11',
+        month: monthStr,
         activeStudents,
         totalContracts: activeStudents,
-        participationRate: 0.50,
+        participationRate: 0.5,
         realizedRevenue,
         amountToPay,
         status: 'PENDENTE',
@@ -626,7 +644,7 @@ async function main() {
   // ============================================================================
   const attendanceStatuses = [
     ...Array(12).fill(AttendanceStatus.PRESENTE), // 60%
-    ...Array(6).fill(AttendanceStatus.AUSENTE),   // 30%
+    ...Array(6).fill(AttendanceStatus.AUSENTE), // 30%
     ...Array(2).fill(AttendanceStatus.JUSTIFICADO), // 10%
   ];
 

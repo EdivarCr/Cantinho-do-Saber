@@ -87,43 +87,10 @@ export function EditStudentForm() {
         status: data.status,
         enrollmentDate: enrollmentDateFormatted,
       });
-    } catch (error) {
-      console.log('API não disponível. Carregando dados locais...');
-      const localStudents = JSON.parse(localStorage.getItem('students') || '[]');
-      const foundStudent = localStudents.find((s: Student) => s.id === id);
-
-      if (foundStudent) {
-        const birthDateFormatted = foundStudent.birthDate?.split('T')[0] || '';
-        const enrollmentDateFormatted = foundStudent.enrollmentDate?.split('T')[0] || '';
-
-        setFormData({
-          name: foundStudent.name || '',
-          birthDate: birthDateFormatted,
-          grade: foundStudent.grade || 'series-1-ano',
-          schoolType: foundStudent.schoolType || 'publica',
-          class: foundStudent.class || '',
-          teacher: foundStudent.teacher || '',
-          monthlyFee: foundStudent.monthlyFee || 0,
-          address: foundStudent.address || {
-            street: '',
-            number: '',
-            complement: '',
-            neighborhood: '',
-          },
-          guardian: foundStudent.guardian || {
-            name: '',
-            relationship: '',
-            phone: '',
-            email: '',
-            address: { street: '', number: '', complement: '', neighborhood: '' },
-          },
-          status: foundStudent.status || 'active',
-          enrollmentDate: enrollmentDateFormatted,
-        });
-      } else {
-        addToast('Aluno não encontrado', 'error');
-        navigate('/dashboard/students');
-      }
+    } catch (error: any) {
+      console.error('Erro ao carregar aluno:', error);
+      addToast('Erro ao carregar dados do aluno', 'error');
+      navigate('/dashboard/students');
     } finally {
       setIsLoading(false);
     }
@@ -200,17 +167,9 @@ export function EditStudentForm() {
       setTimeout(() => {
         navigate(`/dashboard/students/${id}`);
       }, 1000);
-    } catch (error) {
-      console.log('API não disponível. Salvando dados localmente...');
-      const localStudents = JSON.parse(localStorage.getItem('students') || '[]');
-      const updatedStudents = localStudents.map((s: Student) =>
-        s.id === id ? { ...s, ...formData } : s,
-      );
-      localStorage.setItem('students', JSON.stringify(updatedStudents));
-      addToast('Aluno atualizado com sucesso!', 'success');
-      setTimeout(() => {
-        navigate(`/dashboard/students/${id}`);
-      }, 1000);
+    } catch (error: any) {
+      console.error('Erro ao atualizar aluno:', error);
+      addToast(error.message || 'Erro ao atualizar aluno', 'error');
     }
   };
 
@@ -328,7 +287,7 @@ export function EditStudentForm() {
                   <option value="">Selecione uma turma</option>
                   {getFilteredClasses().map((cls) => (
                     <option key={cls.id} value={cls.id}>
-                      {cls.name} - {cls.shift === 'MANHA' ? 'Manhã' : 'Tarde'}
+                      {cls.name} - {cls.shift === 'MATUTINO' ? 'Manhã' : 'Tarde'}
                     </option>
                   ))}
                   {getFilteredClasses().length === 0 && (

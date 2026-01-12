@@ -125,6 +125,13 @@ import { RecordPaymentController } from './infra/http/controllers/finance/record
 import { CreateExpenseController } from './infra/http/controllers/finance/create-expense.controller';
 import { GetExpensesByMonthController } from './infra/http/controllers/finance/get-expenses-by-month.controller';
 import { ProcessOverduePaymentsController } from './infra/http/controllers/finance/process-overdue-payments.controller';
+import { GetPaymentsByMonthController } from './infra/http/controllers/finance/get-payments-by-month.controller';
+import { GetTeacherPaymentsByMonthController } from './infra/http/controllers/finance/get-teacher-payments-by-month.controller';
+import { RecordTeacherPaymentController } from './infra/http/controllers/finance/record-teacher-payment.controller';
+import { GetAttendancesByLessonController } from './infra/http/controllers/attendance/get-attendances-by-lesson.controller';
+import { MarkExpenseAsPaidController } from './infra/http/controllers/finance/mark-expense-as-paid.controller';
+import { RevertExpenseToPendingController } from './infra/http/controllers/finance/revert-expense-to-pending.controller';
+import { AdvancePaymentForTeacherController } from './infra/http/controllers/finance/advance-payment-for-teacher.controller';
 import { startOverduePaymentsCron } from './infra/cron/overdue-payments.cron';
 
 //#region MODULE CONFIGURATION
@@ -147,10 +154,16 @@ container.registerSingleton<IAddressRepository>(ADDRESS_REPOSITORY_TOKEN, Addres
 container.registerSingleton<ITeacherRepository>(TEACHER_REPOSITORY_TOKEN, TeacherRepository);
 // Financial repositories
 container.registerSingleton<IContractRepository>(CONTRACT_REPOSITORY_TOKEN, ContractRepository);
-container.registerSingleton<IEnrollmentRepository>(ENROLLMENT_REPOSITORY_TOKEN, EnrollmentRepository);
+container.registerSingleton<IEnrollmentRepository>(
+  ENROLLMENT_REPOSITORY_TOKEN,
+  EnrollmentRepository,
+);
 container.registerSingleton<IPaymentRepository>(PAYMENT_REPOSITORY_TOKEN, PaymentRepository);
 container.registerSingleton<IExpenseRepository>(EXPENSE_REPOSITORY_TOKEN, ExpenseRepository);
-container.registerSingleton<ITeacherPaymentRepository>(TEACHER_PAYMENT_REPOSITORY_TOKEN, TeacherPaymentRepository);
+container.registerSingleton<ITeacherPaymentRepository>(
+  TEACHER_PAYMENT_REPOSITORY_TOKEN,
+  TeacherPaymentRepository,
+);
 
 //#endregion
 
@@ -224,6 +237,7 @@ const getStudentAttendanceHistoryController = container.resolve(
 );
 const registerStudentAttendanceController = container.resolve(RegisterStudentAttendanceController);
 const updateAttendanceController = container.resolve(UpdateAttendanceController);
+const getAttendancesByLessonController = container.resolve(GetAttendancesByLessonController);
 
 // Finance Controllers
 const createEnrollmentController = container.resolve(CreateEnrollmentController);
@@ -231,6 +245,12 @@ const recordPaymentController = container.resolve(RecordPaymentController);
 const createExpenseController = container.resolve(CreateExpenseController);
 const getExpensesByMonthController = container.resolve(GetExpensesByMonthController);
 const processOverduePaymentsController = container.resolve(ProcessOverduePaymentsController);
+const getPaymentsByMonthController = container.resolve(GetPaymentsByMonthController);
+const getTeacherPaymentsByMonthController = container.resolve(GetTeacherPaymentsByMonthController);
+const recordTeacherPaymentController = container.resolve(RecordTeacherPaymentController);
+const markExpenseAsPaidController = container.resolve(MarkExpenseAsPaidController);
+const revertExpenseToPendingController = container.resolve(RevertExpenseToPendingController);
+const advancePaymentForTeacherController = container.resolve(AdvancePaymentForTeacherController);
 
 // --- Routes Registration ---
 
@@ -280,6 +300,7 @@ router.use('/', findAttendanceByIdController.router);
 router.use('/', getStudentAttendanceHistoryController.router);
 router.use('/', registerStudentAttendanceController.router);
 router.use('/', updateAttendanceController.router);
+router.use('/', getAttendancesByLessonController.router);
 
 // Finance routes
 router.use('/', createEnrollmentController.router);
@@ -287,6 +308,12 @@ router.use('/', recordPaymentController.router);
 router.use('/', createExpenseController.router);
 router.use('/', getExpensesByMonthController.router);
 router.use('/', processOverduePaymentsController.router);
+router.use('/', getPaymentsByMonthController.router);
+router.use('/', getTeacherPaymentsByMonthController.router);
+router.use('/', recordTeacherPaymentController.router);
+router.use('/', markExpenseAsPaidController.router);
+router.use('/', revertExpenseToPendingController.router);
+router.use('/', advancePaymentForTeacherController.router);
 
 //#endregion
 
@@ -294,7 +321,7 @@ const PORT = process.env.EXPRESS_BACK_PORT ?? 4000;
 
 app.listen(PORT, async () => {
   console.log(`🚀 Server listening on http://localhost:${PORT}`);
-  
+
   // Start cron jobs
   startOverduePaymentsCron();
 });

@@ -7,8 +7,9 @@ import { StudentPresenter } from '../../presenters/student.presenter';
 import { ResourceNotFoundError } from 'apps/server/src/core/errors/resource-not-found.error';
 
 // GET requests validam query params, não body
+// Permite string vazia para listar todos os alunos
 const findStudentByNameQuerySchema = z.object({
-  studentName: z.string().min(1),
+  studentName: z.string().min(0).default(''),
 });
 
 type FindStudentQuerySchema = z.infer<typeof findStudentByNameQuerySchema>;
@@ -63,9 +64,9 @@ export class FindStudentByNameController {
       return res.status(200).json(students.map(StudentPresenter.toHTTP));
     } catch (error) {
       console.error('[FindStudentByNameController] Error:', error);
-      return res.status(500).json({ 
+      return res.status(500).json({
         message: 'Internal server error',
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
     }
   }

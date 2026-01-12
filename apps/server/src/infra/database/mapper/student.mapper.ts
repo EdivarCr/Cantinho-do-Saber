@@ -1,5 +1,9 @@
 import { UniqueEntityId } from 'apps/server/src/core/entities/unique-entity-id';
-import { StudentEntity } from 'apps/server/src/domain/enterprise/entities/student.entity';
+import {
+  StudentEntity,
+  GuardianData,
+  AddressData,
+} from 'apps/server/src/domain/enterprise/entities/student.entity';
 import { StudentSchema } from '../schemas/student.schema';
 import { SchoolGrade } from 'apps/server/src/core/types/school-enums';
 import { ClassMapper } from './class.mapper';
@@ -17,6 +21,28 @@ export interface StudentPersistenceDTO {
 
 export class StudentMapper {
   static toDomain(raw: StudentSchema): StudentEntity {
+    // Map guardians with full data
+    const guardians: GuardianData[] =
+      raw.guardians?.map((g) => ({
+        id: g.guardianId,
+        name: g.guardian?.name ?? 'Desconhecido',
+        phone: g.guardian?.phone ?? '',
+        email: g.guardian?.email ?? null,
+        kinship: g.kinship,
+      })) ?? [];
+
+    // Map addresses with full data
+    const addresses: AddressData[] =
+      raw.addresses?.map((a) => ({
+        id: a.id,
+        street: a.street,
+        number: a.number,
+        district: a.district,
+        complement: a.complement ?? null,
+        city: a.city ?? null,
+        state: a.state ?? null,
+      })) ?? [];
+
     return StudentEntity.create(
       {
         name: raw.name,
@@ -27,6 +53,8 @@ export class StudentMapper {
         guardianIds: raw.guardians?.map((g) => g.guardianId) ?? [],
         enrollmentIds: raw.enrollments?.map((e) => e.id) ?? [],
         attendanceIds: raw.attendances?.map((a) => a.id) ?? [],
+        guardians,
+        addresses,
         class: raw.class ? ClassMapper.toDomain(raw.class) : null,
         createdAt: raw.createdAt,
         deletedAt: raw.deletedAt,

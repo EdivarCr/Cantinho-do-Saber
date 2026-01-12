@@ -4,6 +4,24 @@ import { Optional } from 'apps/server/src/core/types/optional';
 import { SchoolGrade } from 'apps/server/src/core/types/school-enums';
 import { ClassEntity } from './class.entity';
 
+export interface GuardianData {
+  id: string;
+  name: string;
+  phone: string;
+  email?: string | null;
+  kinship: string;
+}
+
+export interface AddressData {
+  id: string;
+  street: string;
+  number: string;
+  district: string;
+  complement?: string | null;
+  city?: string | null;
+  state?: string | null;
+}
+
 export interface StudentProps {
   name: string;
   birthDate: Date;
@@ -13,6 +31,10 @@ export interface StudentProps {
   guardianIds: string[];
   enrollmentIds: string[];
   attendanceIds: string[];
+
+  // Full data for populated queries
+  guardians?: GuardianData[];
+  addresses?: AddressData[];
 
   // Optional class data for populated queries
   class?: ClassEntity | null;
@@ -54,6 +76,14 @@ export class StudentEntity extends Entity<StudentProps> {
     return this.props.attendanceIds;
   }
 
+  get guardians() {
+    return this.props.guardians ?? [];
+  }
+
+  get addresses() {
+    return this.props.addresses ?? [];
+  }
+
   get class() {
     return this.props.class;
   }
@@ -69,7 +99,15 @@ export class StudentEntity extends Entity<StudentProps> {
   static create(
     props: Optional<
       StudentProps,
-      'createdAt' | 'deletedAt' | 'addressIds' | 'guardianIds' | 'enrollmentIds' | 'attendanceIds' | 'class'
+      | 'createdAt'
+      | 'deletedAt'
+      | 'addressIds'
+      | 'guardianIds'
+      | 'enrollmentIds'
+      | 'attendanceIds'
+      | 'class'
+      | 'guardians'
+      | 'addresses'
     >,
     id?: UniqueEntityId,
   ): StudentEntity {
@@ -80,6 +118,8 @@ export class StudentEntity extends Entity<StudentProps> {
         guardianIds: props.guardianIds ?? [],
         enrollmentIds: props.enrollmentIds ?? [],
         attendanceIds: props.attendanceIds ?? [],
+        guardians: props.guardians ?? [],
+        addresses: props.addresses ?? [],
         class: props.class ?? null,
         createdAt: props.createdAt ?? new Date(),
         deletedAt: props.deletedAt ?? null,
